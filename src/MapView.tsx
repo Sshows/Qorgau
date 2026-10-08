@@ -21,7 +21,6 @@ import {
   LabelStyle,
   Math as CesiumMath,
   Matrix4,
-  NearFarScalar,
   OpenStreetMapImageryProvider,
   PolylineGlowMaterialProperty,
   ScreenSpaceEventHandler,
@@ -65,80 +64,11 @@ const COLORS: Record<MapObject["kind"], string> = {
   police: "#be9cff",
   place: "#d4e0ec",
 };
-const ICON_PATHS: Record<MapObject["kind"], string> = {
-  camera:
-    'M18 18h15a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H18a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3Z M29.5 25.5a4 4 0 1 0-8 0a4 4 0 1 0 8 0 M36 21l6-3v15l-6-3M21 18l2-4h6l2 4',
-  incident: 'M27 14l13 23H14Z M27 22v7',
-  patrol:
-    'M16 24l3-7h15l4 7v10H16Z M18 24h18M21 34v3M33 34v3M24 14h7',
-  police:
-    'M27 13l12 5v9c0 7-12 13-12 13s-12-6-12-13v-9Z M27 21l2 4 5 .5-3.5 3 1 4.5-4.5-2.5-4.5 2.5 1-4.5-3.5-3 5-.5Z',
-  place:
-    'M17 37V17h14v20M31 23h7v14M13 37h29M22 22h4M22 27h4M22 32h4M34 28h1M34 33h1',
-};
-const pinCache = new Map<string, HTMLCanvasElement>();
 
 function objectColor(object: Pick<MapObject, "kind" | "severity">): string {
   return object.kind === "incident" && object.severity === "high"
     ? "#ff6171"
     : COLORS[object.kind];
-}
-
-function pinImage(
-  kind: MapObject["kind"],
-  selected: boolean,
-  severity?: MapObject["severity"],
-): HTMLCanvasElement {
-  const cacheKey = `${kind}-${selected}-${severity ?? ""}`;
-  const cached = pinCache.get(cacheKey);
-  if (cached) return cached;
-  const baseColor = objectColor({ kind, severity });
-  const color = selected ? "#e6fff8" : baseColor;
-  // Cesium rasterizes SVG URLs at billboard display size. Canvas retains a 4×
-  // source texture, keeping these code-native vector icons crisp on HiDPI screens.
-  const canvas = document.createElement("canvas");
-  canvas.width = 216;
-  canvas.height = 264;
-  const context = canvas.getContext("2d");
-  if (context) {
-    context.scale(4, 4);
-    const outline = new Path2D("M27 62 12 45C-8 23 7 2 27 2s35 21 15 43Z");
-    context.fillStyle = "#081b25";
-    context.globalAlpha = 0.96;
-    context.fill(outline);
-    context.globalAlpha = 1;
-    context.strokeStyle = color;
-    context.lineWidth = selected ? 3 : 1.8;
-    context.stroke(outline);
-    context.beginPath();
-    context.arc(27, 27, 20, 0, Math.PI * 2);
-    context.fillStyle = baseColor;
-    context.globalAlpha = selected ? 0.3 : 0.13;
-    context.fill();
-    context.globalAlpha = 1;
-    context.lineWidth = 1.9;
-    context.lineJoin = "round";
-    context.lineCap = "round";
-    context.stroke(new Path2D(ICON_PATHS[kind]));
-    context.fillStyle = color;
-    if (kind === "incident") {
-      context.beginPath();
-      context.arc(27, 33, 1, 0, Math.PI * 2);
-      context.fill();
-    }
-    if (kind === "patrol") {
-      for (const x of [21, 33]) {
-        context.beginPath();
-        context.arc(x, 29, 1.6, 0, Math.PI * 2);
-        context.fill();
-      }
-    }
-    context.beginPath();
-    context.arc(27, 61, 2, 0, Math.PI * 2);
-    context.fill();
-  }
-  pinCache.set(cacheKey, canvas);
-  return canvas;
 }
 
 function numericHeight(value: unknown): number | null {
@@ -387,15 +317,6 @@ export default function MapView(props: MapViewProps) {
         name: object.name,
         position: Cartesian3.fromDegrees(object.longitude, object.latitude),
         show: latest.current.visibleKinds.includes(object.kind),
-        billboard: {
-          image: pinImage(object.kind, false, object.severity),
-          width: 38,
-          height: 47,
-          verticalOrigin: VerticalOrigin.BOTTOM,
-          heightReference: HeightReference.CLAMP_TO_GROUND,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          scaleByDistance: new NearFarScalar(500, 1.15, 50000, 0.65),
-        },
         label: {
           text: object.name,
           font: "500 12px Inter, system-ui, sans-serif",
@@ -408,16 +329,16 @@ export default function MapView(props: MapViewProps) {
           backgroundPadding: new Cartesian2(7, 4),
           horizontalOrigin: HorizontalOrigin.CENTER,
           verticalOrigin: VerticalOrigin.BOTTOM,
-          pixelOffset: new Cartesian2(0, -47),
+          pixelOffset: new Cartesian2(0, -22),
           heightReference: HeightReference.CLAMP_TO_GROUND,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
           distanceDisplayCondition: new DistanceDisplayCondition(0, 8000),
         },
         point: {
-          pixelSize: 4,
+          pixelSize: 11,
           color,
           outlineColor: Color.fromCssColorString("#07131e"),
-          outlineWidth: 2,
+          outlineWidth: 3,
           heightReference: HeightReference.CLAMP_TO_GROUND,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
@@ -434,11 +355,11 @@ export default function MapView(props: MapViewProps) {
       if (!entity) continue;
       entity.show = props.visibleKinds.includes(object.kind);
       const isSelected = props.selected?.id === object.id;
-      if (entity.billboard) {
-        entity.billboard.image = new ConstantProperty(
-          pinImage(object.kind, isSelected, object.severity),
-        );
-        entity.billboard.scale = new ConstantProperty(isSelected ? 1.2 : 1);
+      if (entity.point) {
+        entity.point.pixelSize = new ConstantProperty(isSelected ? 18 : 11);
+        entity.point.color = new ConstantProperty(Color.fromCssColorString(objectColor(object)));
+        entity.point.outlineColor = new ConstantProperty(Color.fromCssColorString(isSelected ? "#e6fff8" : "#07131e"));
+        entity.point.outlineWidth = new ConstantProperty(3);
       }
       if (entity.label) {
         entity.label.fillColor = new ConstantProperty(
