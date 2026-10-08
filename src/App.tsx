@@ -175,6 +175,40 @@ class CameraBoundary extends Component<
   }
 }
 
+class SearchBoundary extends Component<
+  { children: ReactNode; onClose: () => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? (
+      <div className="modal-overlay">
+        <section className="search-hub-dialog" role="alert">
+          <h2>Поиск не загрузился</h2>
+          <p className="hub-note">
+            Обновите страницу, чтобы загрузить актуальную версию поиска.
+          </p>
+          <button className="primary-button" onClick={() => location.reload()}>
+            Обновить страницу
+          </button>
+          <button
+            className="modal-close icon-button"
+            aria-label="Закрыть поиск"
+            onClick={this.props.onClose}
+          >
+            <X size={20} />
+          </button>
+        </section>
+      </div>
+    ) : (
+      this.props.children
+    );
+  }
+}
+
 function App() {
   const [tab, setTab] = useState("overview");
   const [selected, setSelected] = useState<MapObject | null>(incidents[0]);
@@ -1546,32 +1580,34 @@ function App() {
         </div>
       ) : null}
       {hubOpen ? (
-        <Suspense
-          fallback={
-            <div className="modal-overlay">
-              <section className="search-hub-dialog" role="status">
-                Загрузка поиска…
-                <button
-                  className="modal-close icon-button"
-                  onClick={closeHub}
-                  aria-label="Закрыть поиск"
-                >
-                  <X size={20} />
-                </button>
-              </section>
-            </div>
-          }
-        >
-          <SearchHub
-            onClose={closeHub}
-            onPlace={(point) => {
-              setCustomPoint(point);
-              setDistrict("all");
-              selectObject(point);
-              closeHub();
-            }}
-          />
-        </Suspense>
+        <SearchBoundary onClose={closeHub}>
+          <Suspense
+            fallback={
+              <div className="modal-overlay">
+                <section className="search-hub-dialog" role="status">
+                  Загрузка поиска…
+                  <button
+                    className="modal-close icon-button"
+                    onClick={closeHub}
+                    aria-label="Закрыть поиск"
+                  >
+                    <X size={20} />
+                  </button>
+                </section>
+              </div>
+            }
+          >
+            <SearchHub
+              onClose={closeHub}
+              onPlace={(point) => {
+                setCustomPoint(point);
+                setDistrict("all");
+                selectObject(point);
+                closeHub();
+              }}
+            />
+          </Suspense>
+        </SearchBoundary>
       ) : null}
       {cameraOpen ? (
         <div className="modal-overlay" onClick={() => setCameraOpen(false)}>
