@@ -61,6 +61,8 @@ test("local search resolves aliases, punctuation, multiple words and Ё normaliz
   assert.equal(searchLocal("Коктобе")[0]?.id, "place-kok-tobe");
   assert.equal(searchLocal("Медео")[0]?.id, "place-medeu");
   assert.equal(searchLocal("Алматы 2")[0]?.id, "place-almaty-two");
+  assert.equal(searchLocal("Шымбулак")[0]?.id, "webcam-shymbulak");
+  assert.equal(searchLocal("Шымбулак")[0]?.isDemo, false);
   assert.equal(
     searchLocal("ботаничёский сад")[0]?.id,
     "place-botanical-garden",

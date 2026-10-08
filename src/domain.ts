@@ -1,4 +1,5 @@
 import { objectAliases, objects, patrols, type MapObject } from "./data";
+import { publicWebcams } from "./publicSources";
 
 export interface Coordinates {
   latitude: number;
@@ -61,7 +62,7 @@ export function searchLocal(input: string): MapObject[] {
   if (!query) return [];
   const words = query.split(/\s+/);
 
-  return objects
+  return [...objects, ...publicWebcams]
     .map((object, index) => {
       const name = normalizeSearch(object.name);
       const aliases = (objectAliases[object.id] ?? []).map(normalizeSearch);

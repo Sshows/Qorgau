@@ -46,11 +46,19 @@ import type { MapObject } from "./data";
 import { nearestPatrol, parseCoordinates, searchLocal } from "./domain";
 import { getRoute, loadPolice } from "./services";
 import type { RouteResult } from "./services";
+import {
+  additionalCameraLinks,
+  publicCameraSources,
+  publicWebcams,
+  twoGisTrafficUrl,
+} from "./publicSources";
 
 const MapView = lazy(() => import("./MapView"));
+const PublicCameraPlayer = lazy(() => import("./PublicCameraPlayer"));
 const kindNames: Record<string, string> = {
   incident: "Происшествие",
   camera: "Камера",
+  webcam: "Публичные веб-камеры",
   patrol: "Патруль",
   place: "Городской объект",
   police: "Объект OSM",
@@ -58,11 +66,19 @@ const kindNames: Record<string, string> = {
 const kindIcons = {
   incident: TriangleAlert,
   camera: Camera,
+  webcam: Radio,
   patrol: Navigation,
   place: MapPin,
   police: ShieldCheck,
 };
 const layerConfig = [
+  {
+    id: "webcam",
+    name: "Публичные веб-камеры",
+    subtitle: "Шымбулак · 3 вида",
+    icon: Radio,
+    color: "cyan",
+  },
   {
     id: "incident",
     name: "Происшествия",
@@ -122,6 +138,42 @@ class MapBoundary extends Component<
   }
 }
 
+class CameraBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? (
+      <div className="public-camera-loading" role="status">
+        <p>
+          Плеер не загрузился. Обновите страницу или откройте камеры у
+          владельца.
+        </p>
+        <a
+          className="public-camera-source"
+          href="https://shymbulak.com/live/"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Официальные камеры Шымбулака ↗
+        </a>
+        <button
+          className="public-camera-start"
+          onClick={() => location.reload()}
+        >
+          Обновить страницу
+        </button>
+      </div>
+    ) : (
+      this.props.children
+    );
+  }
+}
+
 function App() {
   const [tab, setTab] = useState("overview");
   const [selected, setSelected] = useState<MapObject | null>(incidents[0]);
@@ -133,6 +185,7 @@ function App() {
   } | null>(null);
   const [district, setDistrict] = useState("all");
   const [visibleKinds, setVisibleKinds] = useState([
+    "webcam",
     "incident",
     "camera",
     "patrol",
@@ -153,6 +206,12 @@ function App() {
   const [routeLoading, setRouteLoading] = useState(false);
   const [toast, setToast] = useState("");
   const [info, setInfo] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraId, setCameraId] = useState(publicCameraSources[0].id);
+  const cameraClose = useRef<HTMLButtonElement>(null);
+  const activeCamera =
+    publicCameraSources.find((source) => source.id === cameraId) ??
+    publicCameraSources[0];
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [timeline, setTimeline] = useState(100);
@@ -191,6 +250,7 @@ function App() {
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setInfo(false);
+        setCameraOpen(false);
         setSearchOpen(false);
         setSidebarOpen(false);
       }
@@ -198,6 +258,38 @@ function App() {
     document.addEventListener("keydown", escape);
     return () => document.removeEventListener("keydown", escape);
   }, []);
+  useEffect(() => {
+    if (!cameraOpen) return;
+    const previous =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    cameraClose.current?.focus();
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const dialog =
+        cameraClose.current?.closest<HTMLElement>("[role='dialog']");
+      const controls = dialog?.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), a[href], video[controls]",
+      );
+      if (!controls?.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      }
+      if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", trapFocus);
+    return () => {
+      document.removeEventListener("keydown", trapFocus);
+      previous?.focus();
+    };
+  }, [cameraOpen]);
 
   const fly = useCallback(
     (point: { longitude: number; latitude: number }, height = 1800) =>
@@ -218,7 +310,12 @@ function App() {
     [fly],
   );
   const allObjects = useMemo(
-    () => [...objects, ...police, ...(customPoint ? [customPoint] : [])],
+    () => [
+      ...publicWebcams,
+      ...objects,
+      ...police,
+      ...(customPoint ? [customPoint] : []),
+    ],
     [police, customPoint],
   );
   const visibleIncidents = useMemo(
@@ -270,7 +367,7 @@ function App() {
     [query, police],
   );
   const resourceObjects = districtObjects.filter((object) =>
-    ["camera", "patrol", "police"].includes(object.kind),
+    ["webcam", "camera", "patrol", "police"].includes(object.kind),
   );
   const nearby = selected
     ? nearestPatrol(
@@ -478,6 +575,12 @@ function App() {
               ) : null}
             </button>
           ))}
+          <button
+            className={cameraOpen ? "active" : ""}
+            onClick={() => setCameraOpen(true)}
+          >
+            <Radio size={14} /> Камеры
+          </button>
         </nav>
         <div className="topbar-right">
           <span className="demo-label">
@@ -605,6 +708,19 @@ function App() {
             </span>
           </button>
           <div className="sidebar-bottom">
+            <a
+              className="traffic-source-card"
+              href={twoGisTrafficUrl(currentDistrict ?? city)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Route size={18} />
+              <span>
+                <strong>Пробки · 2ГИС</strong>
+                <small>ДТП, работы и перекрытия</small>
+              </span>
+              <ArrowUpRight size={15} />
+            </a>
             <div className="source-status">
               <span className="status-dot" />
               Открытые геоданные
@@ -647,7 +763,7 @@ function App() {
                   ? "Единая картина города. Данные, объекты и сценарии в одном месте."
                   : tab === "incidents"
                     ? "Демонстрационные события и визуальные маршруты реагирования."
-                    : "Демонстрационные камеры, экипажи и открытые городские объекты."}
+                    : "Публичные веб-камеры, учебные экипажи и открытые городские объекты."}
               </p>
             </div>
             <button
@@ -673,13 +789,15 @@ function App() {
               },
               {
                 icon: Camera,
-                label: "Камеры",
-                value: districtObjects.filter(
-                  (object) => object.kind === "camera",
-                ).length,
-                note: "демонстрационные точки",
-                color: "blue",
-                kind: "camera",
+                label: "Веб-камеры",
+                value: districtObjects.some(
+                  (object) => object.kind === "webcam",
+                )
+                  ? publicCameraSources.length
+                  : 0,
+                note: `${districtObjects.filter((object) => object.kind === "camera").length} demo-точек отдельно`,
+                color: "cyan",
+                kind: "webcam",
               },
               {
                 icon: Navigation,
@@ -711,6 +829,10 @@ function App() {
                   setVisibleKinds((value) => [
                     ...new Set([...value, metric.kind]),
                   ]);
+                  if (metric.kind === "webcam") {
+                    setCameraOpen(true);
+                    return;
+                  }
                   setTab(
                     metric.kind === "incident" ? "incidents" : "resources",
                   );
@@ -858,6 +980,17 @@ function App() {
                   </div>
                 ) : null}
                 <div className="map-tools">
+                  <a
+                    className="traffic-map-button"
+                    href={twoGisTrafficUrl(selected ?? currentDistrict ?? city)}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Пробки и дорожные события в 2ГИС"
+                    title="Пробки и дорожные события · 2ГИС"
+                  >
+                    <Route size={17} />
+                    <small>2ГИС</small>
+                  </a>
                   <button
                     onClick={() => setIs3D((value) => !value)}
                     className={is3D ? "active" : ""}
@@ -918,6 +1051,10 @@ function App() {
                   </div>
                 </div>
                 <div className="map-legend">
+                  <span>
+                    <i className="cyan-bg" />
+                    Веб-камера
+                  </span>
                   <span>
                     <i className="orange-bg" />
                     Событие
@@ -1056,7 +1193,7 @@ function App() {
                 </div>
               ) : (
                 <div className="resource-notice">
-                  Учебные объекты · без live-потоков
+                  Публичные камеры и учебные ресурсы
                 </div>
               )}
               <div className="event-list">
@@ -1070,7 +1207,7 @@ function App() {
                         onClick={() => selectObject(object)}
                       >
                         <span
-                          className={`event-icon ${object.kind === "incident" ? "orange" : object.kind === "camera" ? "blue" : "green"}`}
+                          className={`event-icon ${object.kind === "incident" ? "orange" : object.kind === "webcam" ? "cyan" : object.kind === "camera" ? "blue" : "green"}`}
                         >
                           <Icon size={16} />
                         </span>
@@ -1079,7 +1216,11 @@ function App() {
                             {object.name}
                             <small>
                               {object.updatedAt ||
-                                (object.isDemo ? "DEMO" : "OSM")}
+                                (object.isDemo
+                                  ? "DEMO"
+                                  : object.kind === "webcam"
+                                    ? "PUBLIC"
+                                    : "OSM")}
                             </small>
                           </span>
                           <span className="event-address">
@@ -1091,7 +1232,13 @@ function App() {
                             >
                               {object.status || kindNames[object.kind]}
                             </span>
-                            <span>{object.isDemo ? "Демо" : "OSM"}</span>
+                            <span>
+                              {object.isDemo
+                                ? "Демо"
+                                : object.kind === "webcam"
+                                  ? "Публично"
+                                  : "OSM"}
+                            </span>
                           </span>
                         </span>
                       </button>
@@ -1135,7 +1282,8 @@ function App() {
                     </div>
                     <div className="details-kind">
                       <span className="details-symbol">
-                        {selected.kind === "camera" ? (
+                        {selected.kind === "camera" ||
+                        selected.kind === "webcam" ? (
                           <Camera size={23} />
                         ) : selected.kind === "patrol" ? (
                           <Navigation size={23} />
@@ -1156,19 +1304,35 @@ function App() {
                     </div>
                     <h2>{selected.name}</h2>
                     <p>{selected.description}</p>
+                    {selected.kind === "webcam" ? (
+                      <button
+                        className="primary-button"
+                        onClick={() => setCameraOpen(true)}
+                      >
+                        <Play size={16} /> Смотреть камеры{" "}
+                        <ArrowRight size={15} />
+                      </button>
+                    ) : null}
                     <dl>
                       <div>
                         <dt>Район</dt>
                         <dd>{selected.district}</dd>
                       </div>
                       <div>
-                        <dt>Координаты</dt>
+                        <dt>
+                          {selected.kind === "webcam"
+                            ? "Ориентир"
+                            : "Координаты"}
+                        </dt>
                         <dd className="mono">
                           {selected.latitude.toFixed(4)},{" "}
                           {selected.longitude.toFixed(4)}
                         </dd>
                       </div>
                     </dl>
+                    {selected.locationNote ? (
+                      <p className="location-note">{selected.locationNote}</p>
+                    ) : null}
                     {selected.kind === "camera" ? (
                       <div className="camera-placeholder">
                         <Camera size={25} />
@@ -1186,7 +1350,9 @@ function App() {
                         Посмотреть источник <ArrowUpRight size={13} />
                       </a>
                     ) : null}
-                    {nearby && selected.kind !== "patrol" ? (
+                    {nearby &&
+                    selected.kind !== "patrol" &&
+                    selected.kind !== "webcam" ? (
                       <>
                         <div className="nearest-patrol">
                           <Navigation size={14} />
@@ -1293,8 +1459,8 @@ function App() {
                 <Camera size={20} />
                 <strong>Демонстрационные объекты</strong>
                 <p>
-                  Камеры, происшествия и патрули вымышлены. Видеопотоки и
-                  реальное отслеживание отсутствуют.
+                  Происшествия, патрули и слой demo-камер вымышлены. Публичные
+                  веб-камеры курорта вынесены в отдельный слой.
                 </p>
               </div>
               <div>
@@ -1311,6 +1477,12 @@ function App() {
               города. Районы — приблизительные точки навигации. Поиск работает
               по встроенным местам и координатам. Дорожный маршрут — OSRM, время
               расчётное и без пробок.
+            </p>
+            <p>
+              Три публичных потока Шымбулака воспроизводятся по нажатию с
+              официального источника. Отметка курорта приблизительная. Пробки и
+              сообщения о ДТП, работах и перекрытиях открываются в 2ГИС; их
+              данные в ленту QORGAU пока не поступают.
             </p>
             <div className="info-links">
               <a
@@ -1342,6 +1514,16 @@ function App() {
               >
                 OSRM / FOSSGIS
               </a>
+              <a
+                href="https://shymbulak.com/live/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Веб-камеры Шымбулака
+              </a>
+              <a href={twoGisTrafficUrl()} target="_blank" rel="noreferrer">
+                Пробки Алматы · 2ГИС
+              </a>
             </div>
             <button className="primary-button" onClick={() => setInfo(false)}>
               Вернуться к карте
@@ -1350,8 +1532,88 @@ function App() {
           </section>
         </div>
       ) : null}
+      {cameraOpen ? (
+        <div className="modal-overlay" onClick={() => setCameraOpen(false)}>
+          <section
+            className="public-camera-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="camera-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              ref={cameraClose}
+              className="modal-close icon-button"
+              aria-label="Закрыть веб-камеры"
+              onClick={() => setCameraOpen(false)}
+            >
+              <X size={20} />
+            </button>
+            <span className="eyebrow cyan">ПУБЛИЧНЫЕ ВЕБ-КАМЕРЫ · АЛМАТЫ</span>
+            <h2 id="camera-title">Шымбулак в прямом эфире</h2>
+            <p>
+              Выберите вид и нажмите «Подключить трансляцию». Видео загружается
+              из публичного источника курорта.
+            </p>
+            <div className="public-camera-tabs" aria-label="Выбор камеры">
+              {publicCameraSources.map((source) => (
+                <button
+                  key={source.id}
+                  aria-pressed={cameraId === source.id}
+                  className={cameraId === source.id ? "active" : ""}
+                  onClick={() => setCameraId(source.id)}
+                >
+                  <Camera size={15} />
+                  {source.name}
+                </button>
+              ))}
+            </div>
+            <CameraBoundary>
+              <Suspense
+                fallback={
+                  <div className="public-camera-loading">Загрузка плеера…</div>
+                }
+              >
+                <PublicCameraPlayer
+                  key={activeCamera.id}
+                  source={activeCamera}
+                />
+              </Suspense>
+            </CameraBoundary>
+            <div className="public-camera-attribution">
+              <span>
+                Источник: Shymbulak / ipcam.kz · доступность проверена
+                09.10.2026
+              </span>
+              <a
+                href="https://shymbulak.com/live/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Сайт курорта <ArrowUpRight size={13} />
+              </a>
+            </div>
+            <div className="public-camera-other">
+              <strong>Ещё источники из вашей подборки</strong>
+              {additionalCameraLinks.map((source) => (
+                <a
+                  key={source.url}
+                  href={source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span>
+                    {source.name}
+                    <small>{source.note}</small>
+                  </span>
+                  <ArrowUpRight size={15} />
+                </a>
+              ))}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
 export default App;
-

@@ -1,4 +1,5 @@
-export type ObjectKind = "incident" | "camera" | "patrol" | "place" | "police";
+export type ObjectKind =
+  "incident" | "camera" | "webcam" | "patrol" | "place" | "police";
 export type Severity = "high" | "medium" | "low";
 
 export interface MapObject {
@@ -15,6 +16,8 @@ export interface MapObject {
   address?: string;
   updatedAt?: string;
   sourceUrl?: string;
+  provider?: string;
+  locationNote?: string;
 }
 
 export interface DistrictPreset {

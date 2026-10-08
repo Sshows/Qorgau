@@ -59,6 +59,7 @@ const ALMATY = {
 };
 const COLORS: Record<MapObject["kind"], string> = {
   camera: "#55b8ff",
+  webcam: "#61d6de",
   incident: "#ff9265",
   patrol: "#74edb0",
   police: "#be9cff",
