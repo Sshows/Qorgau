@@ -55,6 +55,7 @@ import {
 
 const MapView = lazy(() => import("./MapView"));
 const PublicCameraPlayer = lazy(() => import("./PublicCameraPlayer"));
+const SearchHub = lazy(() => import("./SearchHub"));
 const kindNames: Record<string, string> = {
   incident: "Происшествие",
   camera: "Камера",
@@ -207,6 +208,8 @@ function App() {
   const [toast, setToast] = useState("");
   const [info, setInfo] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [hubOpen, setHubOpen] = useState(false);
+  const closeHub = useCallback(() => setHubOpen(false), []);
   const [cameraId, setCameraId] = useState(publicCameraSources[0].id);
   const cameraClose = useRef<HTMLButtonElement>(null);
   const activeCamera =
@@ -580,6 +583,15 @@ function App() {
             onClick={() => setCameraOpen(true)}
           >
             <Radio size={14} /> Камеры
+          </button>
+          <button
+            className={hubOpen ? "active" : ""}
+            onClick={() => {
+              setCameraOpen(false);
+              setHubOpen(true);
+            }}
+          >
+            <Search size={14} /> Поиск
           </button>
         </nav>
         <div className="topbar-right">
@@ -974,7 +986,8 @@ function App() {
                       <p>
                         Поиск по встроенным местам и координатам.
                         <br />
-                        Полный адресный справочник пока не подключён.
+                        Организации и адреса доступны в разделе «Поиск» →
+                        «Организации».
                       </p>
                     )}
                   </div>
@@ -1531,6 +1544,34 @@ function App() {
             </button>
           </section>
         </div>
+      ) : null}
+      {hubOpen ? (
+        <Suspense
+          fallback={
+            <div className="modal-overlay">
+              <section className="search-hub-dialog" role="status">
+                Загрузка поиска…
+                <button
+                  className="modal-close icon-button"
+                  onClick={closeHub}
+                  aria-label="Закрыть поиск"
+                >
+                  <X size={20} />
+                </button>
+              </section>
+            </div>
+          }
+        >
+          <SearchHub
+            onClose={closeHub}
+            onPlace={(point) => {
+              setCustomPoint(point);
+              setDistrict("all");
+              selectObject(point);
+              closeHub();
+            }}
+          />
+        </Suspense>
       ) : null}
       {cameraOpen ? (
         <div className="modal-overlay" onClick={() => setCameraOpen(false)}>

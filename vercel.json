@@ -4,7 +4,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!cesium/|data/|favicon.svg).*)",
+      "source": "/((?!cesium/|data/|licenses/|favicon.svg).*)",
       "destination": "/index.html"
     }
   ]
