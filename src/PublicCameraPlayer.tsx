@@ -18,8 +18,10 @@ interface PlaybackState {
 
 export default function PublicCameraPlayer({
   source,
+  onPlayback,
 }: {
   source: PublicCameraSource;
+  onPlayback?: (status: 'Доступна' | 'Недоступна') => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const sessionRef = useRef(0);
@@ -70,6 +72,7 @@ export default function PublicCameraPlayer({
 
     const update = (status: PlaybackStatus, message = "") => {
       if (active()) setPlayback({ url: source.streamUrl, status, message });
+      if (active() && status === 'playing') onPlayback?.('Доступна');
     };
 
     const fail = (
@@ -78,6 +81,7 @@ export default function PublicCameraPlayer({
       if (!active()) return;
       disconnect();
       setPlayback({ url: source.streamUrl, status: "error", message });
+      onPlayback?.('Недоступна');
     };
 
     const requestPlay = () => {

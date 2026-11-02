@@ -9,6 +9,7 @@ import {
   Color,
   ColorMaterialProperty,
   ConstantProperty,
+  CustomDataSource,
   Credit,
   DistanceDisplayCondition,
   EllipsoidTerrainProvider,
@@ -49,6 +50,7 @@ export interface MapViewProps {
   route: { points: number[][]; label: string } | null;
   onSelect: (object: MapObject) => void;
   onStatus: (status: string) => void;
+  onCoordinate?: (latitude: number, longitude: number) => void;
 }
 
 const ALMATY = {
@@ -83,6 +85,7 @@ export default function MapView(props: MapViewProps) {
   const credits = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
   const objectsRef = useRef(new Map<string, MapObject>());
+  const markerSource = useRef<CustomDataSource | null>(null);
   const latest = useRef(props);
   const buildingSource = useRef<GeoJsonDataSource | null>(null);
   const roadSource = useRef<GeoJsonDataSource | null>(null);
@@ -128,6 +131,25 @@ export default function MapView(props: MapViewProps) {
         msaaSamples: 2,
       });
       viewerRef.current = viewer;
+      const markers = new CustomDataSource('qorgau-markers');
+      markers.clustering.enabled = true;
+      markers.clustering.pixelRange = 40;
+      markers.clustering.minimumClusterSize = 8;
+      markers.clustering.clusterEvent.addEventListener((entities, cluster) => {
+        cluster.label.show = true;
+        cluster.label.text = String(entities.length);
+        cluster.label.font = 'bold 15px sans-serif';
+        cluster.label.fillColor = Color.WHITE;
+        cluster.label.showBackground = true;
+        cluster.label.id = entities;
+        cluster.point.show = true;
+        cluster.point.pixelSize = 26;
+        cluster.point.color = Color.fromCssColorString('#187f89');
+        cluster.point.id = entities;
+        cluster.billboard.show = false;
+      });
+      void viewer.dataSources.add(markers);
+      markerSource.current = markers;
       viewer.scene.globe.baseColor = Color.fromCssColorString("#10262f");
       viewer.scene.globe.enableLighting = false;
       viewer.scene.backgroundColor = Color.fromCssColorString("#07121c");
@@ -154,9 +176,20 @@ export default function MapView(props: MapViewProps) {
           if (!viewer || viewer.isDestroyed()) return;
           const picked = viewer.scene.pick(movement.position);
           const entity = picked?.id;
+          if (Array.isArray(entity) && entity[0] instanceof Entity) {
+            void viewer.flyTo(entity, { duration: 0.6, offset: new HeadingPitchRange(0, -1.4, Math.max(300, viewer.camera.positionCartographic.height / 2)) });
+            return;
+          }
           if (entity instanceof Entity && typeof entity.id === "string") {
             const object = objectsRef.current.get(entity.id);
             if (object) latest.current.onSelect(object);
+          } else if (latest.current.onCoordinate) {
+            const ray = viewer.camera.getPickRay(movement.position);
+            const position = ray && viewer.scene.globe.pick(ray, viewer.scene);
+            if (position) {
+              const cartographic = Cartographic.fromCartesian(position);
+              latest.current.onCoordinate(CesiumMath.toDegrees(cartographic.latitude), CesiumMath.toDegrees(cartographic.longitude));
+            }
           }
         },
         ScreenSpaceEventType.LEFT_CLICK,
@@ -232,6 +265,7 @@ export default function MapView(props: MapViewProps) {
       if (viewer && !viewer.isDestroyed()) viewer.destroy();
       if (viewerRef.current === viewer) viewerRef.current = null;
       objectsRef.current.clear();
+      markerSource.current = null;
       buildingSource.current = null;
       roadSource.current = null;
     };
@@ -307,19 +341,21 @@ export default function MapView(props: MapViewProps) {
   useEffect(() => {
     const viewer = viewerRef.current;
     if (!ready || !viewer || viewer.isDestroyed()) return;
-    for (const id of objectsRef.current.keys()) viewer.entities.removeById(id);
+    const markers = markerSource.current;
+    if (!markers) return;
+    markers.entities.removeAll();
     objectsRef.current.clear();
     for (const object of props.objects) {
       const id = `qorgau-object:${object.id}`;
       objectsRef.current.set(id, object);
       const color = Color.fromCssColorString(objectColor(object));
-      viewer.entities.add({
+      markers.entities.add({
         id,
         name: object.name,
         position: Cartesian3.fromDegrees(object.longitude, object.latitude),
         show: latest.current.visibleKinds.includes(object.kind),
         label: {
-          text: object.name,
+          text: `${object.isDemo ? 'DEMO · ' : ''}${object.name}`,
           font: "500 12px Inter, system-ui, sans-serif",
           fillColor: Color.WHITE,
           outlineColor: Color.fromCssColorString("#07131e"),
@@ -352,7 +388,7 @@ export default function MapView(props: MapViewProps) {
     const viewer = viewerRef.current;
     if (!ready || !viewer || viewer.isDestroyed()) return;
     for (const [id, object] of objectsRef.current) {
-      const entity = viewer.entities.getById(id);
+      const entity = markerSource.current?.entities.getById(id);
       if (!entity) continue;
       entity.show = props.visibleKinds.includes(object.kind);
       const isSelected = props.selected?.id === object.id;
