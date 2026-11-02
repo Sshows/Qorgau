@@ -1,12 +1,157 @@
-import {useState} from 'react';
-import {Sparkles,Send} from 'lucide-react';
-import {api} from './useOperations';
-import {emptyFilters,displayTime} from './operations';
-import type {Filters} from './operations';
-import {EventFilters} from './OperationForms';
-interface Answer {answer:string;model:string;incomplete:boolean;context:{total:number;demo:number;retrievedAt:string;filters:Filters;records:{id:string;title:string;source:string;is_demo:boolean}[]}}
-export default function AiPanel({enabled,connected}:{enabled:boolean;connected:boolean}) {
-  const [question,setQuestion]=useState(''),[filters,setFilters]=useState<Filters>({...emptyFilters}),[busy,setBusy]=useState(false),[error,setError]=useState(''),[answers,setAnswers]=useState<{question:string;result:Answer}[]>([]);
-  const ready=enabled&&connected;
-  return <><div className="op-section-title"><div><h2>QORGAU AI</h2><p>Аналитический помощник · ответы с основанием в данных</p></div><span className="op-tag">{ready?'Серверная модель подключена':'Требуется подключение'}</span></div><div className="op-ai-intro"><Sparkles size={38}/><h2>От данных — к понятной сводке</h2><p>Выберите район и период. AI получит снимок базы, рассчитанные показатели и до 150 записей. Он не имеет доступа к закрытым системам и не принимает решения за оператора.</p></div>{!ready&&<div className="op-notice">Настоящая модель пока недоступна. Для работы нужны база данных, вход пользователя и серверные настройки OPENAI_API_KEY, OPENAI_MODEL, AI_ENABLED=true. Автоматические ответы и имитация AI не используются. Подключение платного API требует согласования расходов.</div>}<EventFilters filters={filters} onChange={setFilters} advanced={false}/><div className="op-suggestions">{['Составь краткую сводку по выбранным событиям','Какие категории встречаются чаще всего?','Каких данных недостаточно для выводов?'].map(q=><button key={q} onClick={()=>setQuestion(q)}>{q} ↗</button>)}</div><form className="op-ai-compose" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{const result=await api<Answer>('ai','POST',{question,filters});setAnswers(a=>[...a,{question,result}]);setQuestion('');}catch(e){setError(e instanceof Error?e.message:'Ошибка AI');}finally{setBusy(false);}}}><textarea aria-label="Вопрос QORGAU AI" placeholder="Например: составь сводку зарегистрированных ДТП…" required minLength={3} maxLength={2000} value={question} onChange={e=>setQuestion(e.target.value)}/><button className="op-primary" disabled={!ready||busy}><Send size={16}/>{busy?'Анализ данных…':'Отправить'}</button></form><small className="op-muted">Каждый вопрос независим. Для сравнения периодов выберите диапазон, охватывающий оба периода. 5 запросов/мин, 30/сутки на пользователя.</small>{error&&<p className="op-error" role="alert">{error}</p>}<div aria-live="polite">{answers.map((item,index)=><article className="op-ai-answer" key={index}><h3>{item.question}</h3><p className="op-answer-text">{item.result.answer}</p>{item.result.incomplete&&<p className="op-notice">Ответ ограничен лимитом длины. Уточните вопрос.</p>}<details><summary>Основание: {item.result.context.total} событий, DEMO {item.result.context.demo} · {displayTime(item.result.context.retrievedAt)}</summary><p>Модель: {item.result.model}. Передано записей: {item.result.context.records.length}. Полные описания событий не передаются.</p><pre>{JSON.stringify(item.result.context.filters,null,2)}</pre><ul>{item.result.context.records.map(r=><li key={r.id}>{r.is_demo?'DEMO · ':''}{r.title} · {r.id} · {r.source}</li>)}</ul></details><p className="op-muted">Проверьте выводы по исходным записям. Ответ модели не является подтверждением фактов.</p></article>)}</div></>;
+import { useState } from "react";
+import { Sparkles, Send } from "lucide-react";
+import { api } from "./useOperations";
+import { emptyFilters, displayTime } from "./operations";
+import type { Filters } from "./operations";
+import { EventFilters } from "./OperationForms";
+interface Answer {
+  answer: string;
+  model: string;
+  incomplete: boolean;
+  context: {
+    total: number;
+    demo: number;
+    retrievedAt: string;
+    filters: Filters;
+    records: { id: string; title: string; source: string; is_demo: boolean }[];
+  };
+}
+export default function AiPanel({
+  enabled,
+  connected,
+}: {
+  enabled: boolean;
+  connected: boolean;
+}) {
+  const [question, setQuestion] = useState(""),
+    [filters, setFilters] = useState<Filters>({ ...emptyFilters }),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [answers, setAnswers] = useState<{ question: string; result: Answer }[]>(
+      [],
+    );
+  const ready = enabled && connected;
+  return (
+    <>
+      <div className="op-section-title">
+        <div>
+          <h2>QORGAU AI</h2>
+          <p>Аналитический помощник · ответы с основанием в данных</p>
+        </div>
+        <span className="op-tag">
+          {ready ? "Серверная модель подключена" : "Требуется подключение"}
+        </span>
+      </div>
+      <div className="op-ai-intro">
+        <Sparkles size={38} />
+        <h2>От данных — к понятной сводке</h2>
+        <p>
+          Выберите район и период. AI получит снимок базы, рассчитанные
+          показатели и до 150 записей. Он не имеет доступа к закрытым системам и
+          не принимает решения за оператора.
+        </p>
+      </div>
+      {!ready && (
+        <div className="op-notice">
+          Настоящая модель пока недоступна. Для работы нужны база данных, вход
+          пользователя и серверные настройки OPENAI_API_KEY, OPENAI_MODEL,
+          AI_ENABLED=true. Автоматические ответы и имитация AI не используются.
+          Подключение платного API требует согласования расходов.
+        </div>
+      )}
+      <EventFilters filters={filters} onChange={setFilters} advanced={false} />
+      <div className="op-suggestions">
+        {[
+          "Составь краткую сводку по выбранным событиям",
+          "Какие категории встречаются чаще всего?",
+          "Каких данных недостаточно для выводов?",
+        ].map((q) => (
+          <button key={q} onClick={() => setQuestion(q)}>
+            {q} ↗
+          </button>
+        ))}
+      </div>
+      <form
+        className="op-ai-compose"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          setError("");
+          try {
+            const result = await api<Answer>("ai", "POST", {
+              question,
+              filters,
+            });
+            setAnswers((a) => [...a, { question, result }]);
+            setQuestion("");
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "Ошибка AI");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <textarea
+          aria-label="Вопрос QORGAU AI"
+          placeholder="Например: составь сводку зарегистрированных ДТП…"
+          required
+          minLength={3}
+          maxLength={2000}
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+        />
+        <button className="op-primary" disabled={!ready || busy}>
+          <Send size={16} />
+          {busy ? "Анализ данных…" : "Отправить"}
+        </button>
+      </form>
+      <small className="op-muted">
+        Каждый вопрос независим. Для сравнения периодов выберите диапазон,
+        охватывающий оба периода. 5 запросов/мин, 30/сутки на пользователя.
+      </small>
+      {error && (
+        <p className="op-error" role="alert">
+          {error}
+        </p>
+      )}
+      <div aria-live="polite">
+        {answers.map((item, index) => (
+          <article className="op-ai-answer" key={index}>
+            <h3>{item.question}</h3>
+            <p className="op-answer-text">{item.result.answer}</p>
+            {item.result.incomplete && (
+              <p className="op-notice">
+                Ответ ограничен лимитом длины. Уточните вопрос.
+              </p>
+            )}
+            <details>
+              <summary>
+                Основание: {item.result.context.total} событий, DEMO{" "}
+                {item.result.context.demo} ·{" "}
+                {displayTime(item.result.context.retrievedAt)}
+              </summary>
+              <p>
+                Модель: {item.result.model}. Передано записей:{" "}
+                {item.result.context.records.length}. Полные описания событий не
+                передаются.
+              </p>
+              <pre>{JSON.stringify(item.result.context.filters, null, 2)}</pre>
+              <ul>
+                {item.result.context.records.map((r) => (
+                  <li key={r.id}>
+                    {r.is_demo ? "DEMO · " : ""}
+                    {r.title} · {r.id} · {r.source}
+                  </li>
+                ))}
+              </ul>
+            </details>
+            <p className="op-muted">
+              Проверьте выводы по исходным записям. Ответ модели не является
+              подтверждением фактов.
+            </p>
+          </article>
+        ))}
+      </div>
+    </>
+  );
 }

@@ -1,39 +1,587 @@
-import { useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
-import { districts } from './data';
-import { categories,statuses,priorities,cameraTypes,validateEvent,validateCamera,displayTime } from './operations';
-import type {EventRecord,EventInput,CameraRecord,AuditRecord,Filters} from './operations';
-import OperationsMap from './OperationsMap';
-export function Modal({title,children,onClose,wide=false}:{title:string;children:ReactNode;onClose:()=>void;wide?:boolean}) {
-  const ref=useRef<HTMLDialogElement>(null);
-  useEffect(()=>{const dialog=ref.current;const previous=document.activeElement as HTMLElement;dialog?.showModal();return()=>{dialog?.close();previous?.focus();};},[]);
-  return <dialog ref={ref} className={`op-dialog ${wide?'wide':''}`} onCancel={onClose}><div className="op-dialog-heading"><h2>{title}</h2><button onClick={onClose} aria-label="Закрыть">×</button></div>{children}</dialog>;
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { districts } from "./data";
+import {
+  categories,
+  statuses,
+  priorities,
+  cameraTypes,
+  validateEvent,
+  validateCamera,
+  displayTime,
+} from "./operations";
+import type {
+  EventRecord,
+  EventInput,
+  CameraRecord,
+  AuditRecord,
+  Filters,
+} from "./operations";
+import OperationsMap from "./OperationsMap";
+export function Modal({
+  title,
+  children,
+  onClose,
+  wide = false,
+}: {
+  title: string;
+  children: ReactNode;
+  onClose: () => void;
+  wide?: boolean;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = ref.current;
+    const previous = document.activeElement as HTMLElement;
+    dialog?.showModal();
+    return () => {
+      dialog?.close();
+      previous?.focus();
+    };
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className={`op-dialog ${wide ? "wide" : ""}`}
+      onCancel={onClose}
+    >
+      <div className="op-dialog-heading">
+        <h2>{title}</h2>
+        <button onClick={onClose} aria-label="Закрыть">
+          ×
+        </button>
+      </div>
+      {children}
+    </dialog>
+  );
 }
-export function Select({label,value,onChange,options,all}:{label:string;value:string;onChange:(value:string)=>void;options:readonly string[];all?:string}) {
-  return <label className="op-field"><span>{label}</span><select value={value} onChange={e=>onChange(e.target.value)}>{all!==undefined&&<option value="">{all}</option>}{options.map(v=><option key={v}>{v}</option>)}</select></label>;
+export function Select({
+  label,
+  value,
+  onChange,
+  options,
+  all,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  all?: string;
+}) {
+  return (
+    <label className="op-field">
+      <span>{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        {all !== undefined && <option value="">{all}</option>}
+        {options.map((v) => (
+          <option key={v}>{v}</option>
+        ))}
+      </select>
+    </label>
+  );
 }
-export function EventFilters({filters:f,onChange,advanced=true}:{filters:Filters;onChange:(f:Filters)=>void;advanced?:boolean}) {
-  const field=(key:keyof Filters,value:string)=>onChange({...f,[key]:value});
-  return <div className="op-filters"><label className="op-field op-search"><span>Поиск событий</span><input placeholder="Название, описание или ID" value={f.query} onChange={e=>field('query',e.target.value)}/></label><Select label="Район" value={f.district} onChange={v=>field('district',v)} options={districts.map(d=>d.name)} all="Все районы"/><Select label="Категория" value={f.category} onChange={v=>field('category',v)} options={categories} all="Все категории"/>
-    {advanced&&<><Select label="Статус" value={f.status} onChange={v=>field('status',v)} options={statuses} all="Все статусы"/><Select label="Приоритет" value={f.priority} onChange={v=>field('priority',v)} options={priorities} all="Все приоритеты"/></>}
-    <label className="op-field"><span>С даты · Алматы</span><input type="date" value={f.from} onChange={e=>field('from',e.target.value)}/></label><label className="op-field"><span>По дату включительно</span><input type="date" min={f.from} value={f.to} onChange={e=>field('to',e.target.value)}/></label>
-    <label className="op-field"><span>Происхождение</span><select value={f.provenance} onChange={e=>field('provenance',e.target.value)}><option value="">Все записи</option><option value="demo">Только DEMO</option><option value="registered">Зарегистрированные</option></select></label>
-    {f.from&&f.to&&f.from>f.to&&<p role="alert">Начало периода позже окончания.</p>}
-  </div>;
+export function EventFilters({
+  filters: f,
+  onChange,
+  advanced = true,
+}: {
+  filters: Filters;
+  onChange: (f: Filters) => void;
+  advanced?: boolean;
+}) {
+  const field = (key: keyof Filters, value: string) =>
+    onChange({ ...f, [key]: value });
+  return (
+    <div className="op-filters">
+      <label className="op-field op-search">
+        <span>Поиск событий</span>
+        <input
+          placeholder="Название, описание или ID"
+          value={f.query}
+          onChange={(e) => field("query", e.target.value)}
+        />
+      </label>
+      <Select
+        label="Район"
+        value={f.district}
+        onChange={(v) => field("district", v)}
+        options={districts.map((d) => d.name)}
+        all="Все районы"
+      />
+      <Select
+        label="Категория"
+        value={f.category}
+        onChange={(v) => field("category", v)}
+        options={categories}
+        all="Все категории"
+      />
+      {advanced && (
+        <>
+          <Select
+            label="Статус"
+            value={f.status}
+            onChange={(v) => field("status", v)}
+            options={statuses}
+            all="Все статусы"
+          />
+          <Select
+            label="Приоритет"
+            value={f.priority}
+            onChange={(v) => field("priority", v)}
+            options={priorities}
+            all="Все приоритеты"
+          />
+        </>
+      )}
+      <label className="op-field">
+        <span>С даты · Алматы</span>
+        <input
+          type="date"
+          value={f.from}
+          onChange={(e) => field("from", e.target.value)}
+        />
+      </label>
+      <label className="op-field">
+        <span>По дату включительно</span>
+        <input
+          type="date"
+          min={f.from}
+          value={f.to}
+          onChange={(e) => field("to", e.target.value)}
+        />
+      </label>
+      <label className="op-field">
+        <span>Происхождение</span>
+        <select
+          value={f.provenance}
+          onChange={(e) => field("provenance", e.target.value)}
+        >
+          <option value="">Все записи</option>
+          <option value="demo">Только DEMO</option>
+          <option value="registered">Зарегистрированные</option>
+        </select>
+      </label>
+      {f.from && f.to && f.from > f.to && (
+        <p role="alert">Начало периода позже окончания.</p>
+      )}
+    </div>
+  );
 }
-export function EventForm({existing,demo,onSave,onClose}:{existing?:EventRecord;demo:boolean;onSave:(input:EventInput)=>Promise<unknown>;onClose:()=>void}) {
-  const [form,setForm]=useState<EventInput>(existing??{title:'',description:'',category:'ДТП',district:'Алмалинский',latitude:43.238,longitude:76.945,occurred_at:new Date().toISOString(),priority:'Средний',status:'Новое',is_demo:true,source:'Ручной ввод · учебное событие'});
-  const [error,setError]=useState(''),[saving,setSaving]=useState(false),[showMap,setShowMap]=useState(false),[pointConfirmed,setPointConfirmed]=useState(Boolean(existing));
-  const field=(key:keyof EventInput,value:string|number|boolean)=>setForm(f=>({...f,[key]:value}));
-  async function submit(e:React.FormEvent){e.preventDefault();setError('');setSaving(true);try{if(!pointConfirmed)throw new Error('Укажите место события на карте или введите координаты.');await onSave(validateEvent(form));onClose();}catch(e){setError(e instanceof Error?e.message:'Ошибка сохранения');}finally{setSaving(false);}}
-  return <Modal title={existing?'Редактирование события':'Новое событие'} onClose={onClose} wide><form onSubmit={submit} className="op-form"><label className="op-field"><span>Название</span><input autoFocus required minLength={3} maxLength={180} value={form.title} onChange={e=>field('title',e.target.value)}/></label><label className="op-field"><span>Описание</span><textarea required minLength={3} maxLength={4000} value={form.description} onChange={e=>field('description',e.target.value)}/></label><div className="op-form-grid"><Select label="Категория" value={form.category} onChange={v=>field('category',v)} options={categories}/><Select label="Район" value={form.district} onChange={v=>field('district',v)} options={districts.map(d=>d.name)}/><Select label="Приоритет" value={form.priority} onChange={v=>field('priority',v)} options={priorities}/><Select label="Статус" value={form.status} onChange={v=>field('status',v)} options={statuses}/><label className="op-field"><span>Дата и время · Алматы (UTC+5)</span><input type="datetime-local" required value={new Date(Date.parse(form.occurred_at)+5*3600000).toISOString().slice(0,16)} onChange={e=>{if(e.target.value)field('occurred_at',new Date(`${e.target.value}:00+05:00`).toISOString());}}/></label><label className="op-field"><span>Тип данных</span><select value={form.is_demo?'demo':'registered'} disabled={demo} onChange={e=>field('is_demo',e.target.value==='demo')}><option value="demo">DEMO · учебное событие</option><option value="registered">Ручная регистрация · указать источник</option></select></label><label className="op-field"><span>Широта</span><input type="number" required step="any" min={42.8} max={43.6} value={form.latitude} onChange={e=>{field('latitude',Number(e.target.value));setPointConfirmed(true);}}/></label><label className="op-field"><span>Долгота</span><input type="number" required step="any" min={76.5} max={77.3} value={form.longitude} onChange={e=>{field('longitude',Number(e.target.value));setPointConfirmed(true);}}/></label></div><button type="button" className="op-button" onClick={()=>setShowMap(!showMap)}>{showMap?'Скрыть карту':'Выбрать место на карте'}</button>{showMap&&<OperationsMap events={[]} cameras={[]} onPick={(latitude,longitude)=>{setForm(f=>({...f,latitude,longitude}));setPointConfirmed(true);}}/>}<p className="op-muted">{pointConfirmed?'Координаты выбраны. Проверьте район.':'Начальные координаты — центр карты. Выберите точку события.'}</p><label className="op-field"><span>Источник и основание регистрации</span><input required minLength={3} maxLength={500} value={form.source} onChange={e=>field('source',e.target.value)}/></label>{error&&<p className="op-error" role="alert">{error}</p>}<div className="op-actions"><button className="op-primary" disabled={saving}>{saving?'Сохранение…':'Сохранить событие'}</button><button type="button" onClick={onClose}>Отмена</button></div></form></Modal>;
+export function EventForm({
+  existing,
+  demo,
+  onSave,
+  onClose,
+}: {
+  existing?: EventRecord;
+  demo: boolean;
+  onSave: (input: EventInput) => Promise<unknown>;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState<EventInput>(
+    existing ?? {
+      title: "",
+      description: "",
+      category: "ДТП",
+      district: "Алмалинский",
+      latitude: 43.238,
+      longitude: 76.945,
+      occurred_at: new Date().toISOString(),
+      priority: "Средний",
+      status: "Новое",
+      is_demo: true,
+      source: "Ручной ввод · учебное событие",
+    },
+  );
+  const [error, setError] = useState(""),
+    [saving, setSaving] = useState(false),
+    [showMap, setShowMap] = useState(false),
+    [pointConfirmed, setPointConfirmed] = useState(Boolean(existing));
+  const field = (key: keyof EventInput, value: string | number | boolean) =>
+    setForm((f) => ({ ...f, [key]: value }));
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setSaving(true);
+    try {
+      if (!pointConfirmed)
+        throw new Error(
+          "Укажите место события на карте или введите координаты.",
+        );
+      await onSave(validateEvent(form));
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Ошибка сохранения");
+    } finally {
+      setSaving(false);
+    }
+  }
+  return (
+    <Modal
+      title={existing ? "Редактирование события" : "Новое событие"}
+      onClose={onClose}
+      wide
+    >
+      <form onSubmit={submit} className="op-form">
+        <label className="op-field">
+          <span>Название</span>
+          <input
+            autoFocus
+            required
+            minLength={3}
+            maxLength={180}
+            value={form.title}
+            onChange={(e) => field("title", e.target.value)}
+          />
+        </label>
+        <label className="op-field">
+          <span>Описание</span>
+          <textarea
+            required
+            minLength={3}
+            maxLength={4000}
+            value={form.description}
+            onChange={(e) => field("description", e.target.value)}
+          />
+        </label>
+        <div className="op-form-grid">
+          <Select
+            label="Категория"
+            value={form.category}
+            onChange={(v) => field("category", v)}
+            options={categories}
+          />
+          <Select
+            label="Район"
+            value={form.district}
+            onChange={(v) => field("district", v)}
+            options={districts.map((d) => d.name)}
+          />
+          <Select
+            label="Приоритет"
+            value={form.priority}
+            onChange={(v) => field("priority", v)}
+            options={priorities}
+          />
+          <Select
+            label="Статус"
+            value={form.status}
+            onChange={(v) => field("status", v)}
+            options={statuses}
+          />
+          <label className="op-field">
+            <span>Дата и время · Алматы (UTC+5)</span>
+            <input
+              type="datetime-local"
+              required
+              value={new Date(Date.parse(form.occurred_at) + 5 * 3600000)
+                .toISOString()
+                .slice(0, 16)}
+              onChange={(e) => {
+                if (e.target.value)
+                  field(
+                    "occurred_at",
+                    new Date(`${e.target.value}:00+05:00`).toISOString(),
+                  );
+              }}
+            />
+          </label>
+          <label className="op-field">
+            <span>Тип данных</span>
+            <select
+              value={form.is_demo ? "demo" : "registered"}
+              disabled={demo}
+              onChange={(e) => field("is_demo", e.target.value === "demo")}
+            >
+              <option value="demo">DEMO · учебное событие</option>
+              <option value="registered">
+                Ручная регистрация · указать источник
+              </option>
+            </select>
+          </label>
+          <label className="op-field">
+            <span>Широта</span>
+            <input
+              type="number"
+              required
+              step="any"
+              min={42.8}
+              max={43.6}
+              value={form.latitude}
+              onChange={(e) => {
+                field("latitude", Number(e.target.value));
+                setPointConfirmed(true);
+              }}
+            />
+          </label>
+          <label className="op-field">
+            <span>Долгота</span>
+            <input
+              type="number"
+              required
+              step="any"
+              min={76.5}
+              max={77.3}
+              value={form.longitude}
+              onChange={(e) => {
+                field("longitude", Number(e.target.value));
+                setPointConfirmed(true);
+              }}
+            />
+          </label>
+        </div>
+        <button
+          type="button"
+          className="op-button"
+          onClick={() => setShowMap(!showMap)}
+        >
+          {showMap ? "Скрыть карту" : "Выбрать место на карте"}
+        </button>
+        {showMap && (
+          <OperationsMap
+            events={[]}
+            cameras={[]}
+            onPick={(latitude, longitude) => {
+              setForm((f) => ({ ...f, latitude, longitude }));
+              setPointConfirmed(true);
+            }}
+          />
+        )}
+        <p className="op-muted">
+          {pointConfirmed
+            ? "Координаты выбраны. Проверьте район."
+            : "Начальные координаты — центр карты. Выберите точку события."}
+        </p>
+        <label className="op-field">
+          <span>Источник и основание регистрации</span>
+          <input
+            required
+            minLength={3}
+            maxLength={500}
+            value={form.source}
+            onChange={(e) => field("source", e.target.value)}
+          />
+        </label>
+        {error && (
+          <p className="op-error" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="op-actions">
+          <button className="op-primary" disabled={saving}>
+            {saving ? "Сохранение…" : "Сохранить событие"}
+          </button>
+          <button type="button" onClick={onClose}>
+            Отмена
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
 }
-export function EventDetails({event,audit,onClose,onEdit}:{event:EventRecord;audit:AuditRecord[];onClose:()=>void;onEdit?:()=>void}) {
-  const history=audit.filter(a=>a.entity_id===event.id);
-  return <Modal title={event.title} onClose={onClose}><span className="op-tag">{event.is_demo?'DEMO':'Ручная регистрация'}</span><p>{event.description}</p><dl className="op-details"><dt>Категория / район</dt><dd>{event.category} · {event.district}</dd><dt>Статус / приоритет</dt><dd>{event.status} · {event.priority}</dd><dt>Дата · Алматы</dt><dd>{displayTime(event.occurred_at)}</dd><dt>Место</dt><dd>{event.latitude}, {event.longitude}</dd><dt>Источник</dt><dd>{event.source}</dd><dt>ID / версия</dt><dd>{event.id} / {event.version}</dd></dl>{onEdit&&<button className="op-primary" onClick={onEdit}>Редактировать / изменить статус</button>}<h3>История изменений</h3>{history.length?history.map(a=><article className="op-history" key={a.id}><strong>{a.action==='INSERT'?'Создано':'Изменено'} · {displayTime(a.created_at)}</strong><p>{a.actor ?? 'Системная операция'}</p><details><summary>Данные до и после</summary><pre>{JSON.stringify({до:a.before_data,после:a.after_data},null,2)}</pre></details></article>):<p className="op-muted">История для этой записи отсутствует в загруженных последних 1000 действиях. Встроенные DEMO-события не имеют журнала создания.</p>}</Modal>;
+export function EventDetails({
+  event,
+  audit,
+  onClose,
+  onEdit,
+}: {
+  event: EventRecord;
+  audit: AuditRecord[];
+  onClose: () => void;
+  onEdit?: () => void;
+}) {
+  const history = audit.filter((a) => a.entity_id === event.id);
+  return (
+    <Modal title={event.title} onClose={onClose}>
+      <span className="op-tag">
+        {event.is_demo ? "DEMO" : "Ручная регистрация"}
+      </span>
+      <p>{event.description}</p>
+      <dl className="op-details">
+        <dt>Категория / район</dt>
+        <dd>
+          {event.category} · {event.district}
+        </dd>
+        <dt>Статус / приоритет</dt>
+        <dd>
+          {event.status} · {event.priority}
+        </dd>
+        <dt>Дата · Алматы</dt>
+        <dd>{displayTime(event.occurred_at)}</dd>
+        <dt>Место</dt>
+        <dd>
+          {event.latitude}, {event.longitude}
+        </dd>
+        <dt>Источник</dt>
+        <dd>{event.source}</dd>
+        <dt>ID / версия</dt>
+        <dd>
+          {event.id} / {event.version}
+        </dd>
+      </dl>
+      {onEdit && (
+        <button className="op-primary" onClick={onEdit}>
+          Редактировать / изменить статус
+        </button>
+      )}
+      <h3>История изменений</h3>
+      {history.length ? (
+        history.map((a) => (
+          <article className="op-history" key={a.id}>
+            <strong>
+              {a.action === "INSERT" ? "Создано" : "Изменено"} ·{" "}
+              {displayTime(a.created_at)}
+            </strong>
+            <p>{a.actor ?? "Системная операция"}</p>
+            <details>
+              <summary>Данные до и после</summary>
+              <pre>
+                {JSON.stringify(
+                  { до: a.before_data, после: a.after_data },
+                  null,
+                  2,
+                )}
+              </pre>
+            </details>
+          </article>
+        ))
+      ) : (
+        <p className="op-muted">
+          История для этой записи отсутствует в загруженных последних 1000
+          действиях. Встроенные DEMO-события не имеют журнала создания.
+        </p>
+      )}
+    </Modal>
+  );
 }
-export function CameraForm({existing,onSave,onClose}:{existing?:CameraRecord;onSave:(value:Omit<CameraRecord,'id'|'checked_at'>)=>Promise<unknown>;onClose:()=>void}) {
-  const [form,setForm]=useState<Omit<CameraRecord,'id'|'checked_at'>>(existing??{name:'',address:'',district:'Медеуский',type:'Городская',stream_url:'',source_url:'',latitude:null,longitude:null,location_note:'Точные координаты не подтверждены',status:'Не проверена',is_demo:false});const [error,setError]=useState(''),[busy,setBusy]=useState(false);
-  const field=(key:keyof typeof form,value:unknown)=>setForm(f=>({...f,[key]:value}));
-  return <Modal title={existing?'Настройки камеры':'Добавить публичную камеру'} onClose={onClose}><form className="op-form" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{await onSave(validateCamera(form));onClose();}catch(e){setError(e instanceof Error?e.message:'Ошибка');}finally{setBusy(false);}}}>{([['name','Название'],['address','Адрес / объект'],['stream_url','Прямой HTTPS HLS-поток (.m3u8)'],['source_url','Страница владельца'],['location_note','Точность координат / примечание']] as const).map(([key,label])=><label className="op-field" key={key}><span>{label}</span><input required value={String(form[key])} onChange={e=>field(key,e.target.value)} type={key.endsWith('url')?'url':'text'}/></label>)}<div className="op-form-grid"><Select label="Район" value={form.district} options={districts.map(d=>d.name)} onChange={v=>field('district',v)}/><Select label="Тип" value={form.type} options={cameraTypes} onChange={v=>field('type',v)}/>{(['latitude','longitude'] as const).map(key=><label className="op-field" key={key}><span>{key==='latitude'?'Широта':'Долгота'} · необязательно</span><input type="number" step="any" value={form[key]??''} onChange={e=>field(key,e.target.value===''?null:Number(e.target.value))}/></label>)}<Select label="Подключение" value={form.status} options={['Не проверена','Отключена']} onChange={v=>field('status',v)}/></div><label><input type="checkbox" checked={form.is_demo} onChange={e=>field('is_demo',e.target.checked)}/> Учебный источник · DEMO</label><p className="op-muted">Добавляйте только разрешённые публичные трансляции. Доступность устанавливается после воспроизведения в браузере, ссылка сама по себе её не подтверждает.</p>{error&&<p role="alert" className="op-error">{error}</p>}<button className="op-primary" disabled={busy}>{busy?'Сохранение…':'Сохранить камеру'}</button></form></Modal>;
+export function CameraForm({
+  existing,
+  onSave,
+  onClose,
+}: {
+  existing?: CameraRecord;
+  onSave: (value: Omit<CameraRecord, "id" | "checked_at">) => Promise<unknown>;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState<Omit<CameraRecord, "id" | "checked_at">>(
+    existing ?? {
+      name: "",
+      address: "",
+      district: "Медеуский",
+      type: "Городская",
+      stream_url: "",
+      source_url: "",
+      latitude: null,
+      longitude: null,
+      location_note: "Точные координаты не подтверждены",
+      status: "Не проверена",
+      is_demo: false,
+    },
+  );
+  const [error, setError] = useState(""),
+    [busy, setBusy] = useState(false);
+  const field = (key: keyof typeof form, value: unknown) =>
+    setForm((f) => ({ ...f, [key]: value }));
+  return (
+    <Modal
+      title={existing ? "Настройки камеры" : "Добавить публичную камеру"}
+      onClose={onClose}
+    >
+      <form
+        className="op-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          setError("");
+          try {
+            await onSave(validateCamera(form));
+            onClose();
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "Ошибка");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {(
+          [
+            ["name", "Название"],
+            ["address", "Адрес / объект"],
+            ["stream_url", "Прямой HTTPS HLS-поток (.m3u8)"],
+            ["source_url", "Страница владельца"],
+            ["location_note", "Точность координат / примечание"],
+          ] as const
+        ).map(([key, label]) => (
+          <label className="op-field" key={key}>
+            <span>{label}</span>
+            <input
+              required
+              value={String(form[key])}
+              onChange={(e) => field(key, e.target.value)}
+              type={key.endsWith("url") ? "url" : "text"}
+            />
+          </label>
+        ))}
+        <div className="op-form-grid">
+          <Select
+            label="Район"
+            value={form.district}
+            options={districts.map((d) => d.name)}
+            onChange={(v) => field("district", v)}
+          />
+          <Select
+            label="Тип"
+            value={form.type}
+            options={cameraTypes}
+            onChange={(v) => field("type", v)}
+          />
+          {(["latitude", "longitude"] as const).map((key) => (
+            <label className="op-field" key={key}>
+              <span>
+                {key === "latitude" ? "Широта" : "Долгота"} · необязательно
+              </span>
+              <input
+                type="number"
+                step="any"
+                value={form[key] ?? ""}
+                onChange={(e) =>
+                  field(
+                    key,
+                    e.target.value === "" ? null : Number(e.target.value),
+                  )
+                }
+              />
+            </label>
+          ))}
+          <Select
+            label="Подключение"
+            value={form.status}
+            options={["Не проверена", "Отключена"]}
+            onChange={(v) => field("status", v)}
+          />
+        </div>
+        <label>
+          <input
+            type="checkbox"
+            checked={form.is_demo}
+            onChange={(e) => field("is_demo", e.target.checked)}
+          />{" "}
+          Учебный источник · DEMO
+        </label>
+        <p className="op-muted">
+          Добавляйте только разрешённые публичные трансляции. Доступность
+          устанавливается после воспроизведения в браузере, ссылка сама по себе
+          её не подтверждает.
+        </p>
+        {error && (
+          <p role="alert" className="op-error">
+            {error}
+          </p>
+        )}
+        <button className="op-primary" disabled={busy}>
+          {busy ? "Сохранение…" : "Сохранить камеру"}
+        </button>
+      </form>
+    </Modal>
+  );
 }

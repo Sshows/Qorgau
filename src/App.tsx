@@ -1,66 +1,1023 @@
-import { lazy,Suspense,useMemo,useState,useCallback,useEffect,Component } from 'react';
-import type {ReactNode} from 'react';
-import { ShieldCheck,LayoutDashboard,Map,Camera,TriangleAlert,ChartNoAxesCombined,FileText,Sparkles,Settings,FlaskConical,RefreshCw,Plus,ArrowUpRight,LogIn,LogOut,Menu,Database,Radio } from 'lucide-react';
-import { useOperations,api } from './useOperations';
-import { filterEvents,emptyFilters,displayTime,counts,downloadFile,eventsCsv,roleNames } from './operations';
-import type {EventRecord,Filters,Role} from './operations';
-import { EventForm,EventDetails,EventFilters,Modal,Select } from './OperationForms';
-import OperationsMap from './OperationsMap';
-import CameraCenter from './CameraCenter';
-import type {PlaybackChecks} from './CameraCenter';
-import Analytics,{Bars,Trend} from './Analytics';
-import AiPanel from './AiPanel';
-import { districts } from './data';
-import { additionalCameraLinks,twoGisTrafficUrl } from './publicSources';
-import './operations.css';
-const LegacyMap=lazy(()=>import('./LegacyMap'));
-const navigation=[['overview','Обзор',LayoutDashboard],['map','Карта города',Map],['cameras','Видеомониторинг',Camera],['events','Центр событий',TriangleAlert],['analytics','Аналитика',ChartNoAxesCombined],['reports','Отчёты',FileText],['ai','QORGAU AI',Sparkles],['settings','Система и источники',Settings],['lab','Экспериментальный',FlaskConical]] as const;
-type Page=typeof navigation[number][0];
-class Boundary extends Component<{children:ReactNode},{error:boolean}>{state={error:false};static getDerivedStateFromError(){return {error:true};}render(){return this.state.error?<div className="op-empty"><h2>Не удалось открыть модуль</h2><p>Обновите страницу. Сохранённые записи останутся в хранилище.</p><button className="op-button" onClick={()=>location.reload()}>Обновить</button></div>:this.props.children;}}
-export default function App(){return <Boundary><Workspace/></Boundary>;}
+import {
+  lazy,
+  Suspense,
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+  Component,
+} from "react";
+import type { ReactNode } from "react";
+import {
+  ShieldCheck,
+  LayoutDashboard,
+  Map,
+  Camera,
+  TriangleAlert,
+  ChartNoAxesCombined,
+  FileText,
+  Sparkles,
+  Settings,
+  FlaskConical,
+  RefreshCw,
+  Plus,
+  ArrowUpRight,
+  LogIn,
+  LogOut,
+  Menu,
+  Database,
+  Radio,
+} from "lucide-react";
+import { useOperations, api } from "./useOperations";
+import {
+  filterEvents,
+  emptyFilters,
+  displayTime,
+  counts,
+  downloadFile,
+  eventsCsv,
+  roleNames,
+} from "./operations";
+import type { EventRecord, Filters, Role } from "./operations";
+import {
+  EventForm,
+  EventDetails,
+  EventFilters,
+  Modal,
+  Select,
+} from "./OperationForms";
+import OperationsMap from "./OperationsMap";
+import CameraCenter from "./CameraCenter";
+import type { PlaybackChecks } from "./CameraCenter";
+import Analytics, { Bars, Trend } from "./Analytics";
+import AiPanel from "./AiPanel";
+import { districts } from "./data";
+import { additionalCameraLinks, twoGisTrafficUrl } from "./publicSources";
+import "./operations.css";
+const LegacyMap = lazy(() => import("./LegacyMap"));
+const navigation = [
+  ["overview", "Обзор", LayoutDashboard],
+  ["map", "Карта города", Map],
+  ["cameras", "Видеомониторинг", Camera],
+  ["events", "Центр событий", TriangleAlert],
+  ["analytics", "Аналитика", ChartNoAxesCombined],
+  ["reports", "Отчёты", FileText],
+  ["ai", "QORGAU AI", Sparkles],
+  ["settings", "Система и источники", Settings],
+  ["lab", "Экспериментальный", FlaskConical],
+] as const;
+type Page = (typeof navigation)[number][0];
+class Boundary extends Component<{ children: ReactNode }, { error: boolean }> {
+  state = { error: false };
+  static getDerivedStateFromError() {
+    return { error: true };
+  }
+  render() {
+    return this.state.error ? (
+      <div className="op-empty">
+        <h2>Не удалось открыть модуль</h2>
+        <p>Обновите страницу. Сохранённые записи останутся в хранилище.</p>
+        <button className="op-button" onClick={() => location.reload()}>
+          Обновить
+        </button>
+      </div>
+    ) : (
+      this.props.children
+    );
+  }
+}
+export default function App() {
+  return (
+    <Boundary>
+      <Workspace />
+    </Boundary>
+  );
+}
 function Workspace() {
-  const store=useOperations();const [page,setPage]=useState<Page>(()=>navigation.some(n=>n[0]===location.hash.slice(1))?location.hash.slice(1) as Page:'overview'),[menu,setMenu]=useState(false);
-  const [filters,setFilters]=useState<Filters>({...emptyFilters}),[editing,setEditing]=useState<EventRecord|'new'|null>(null),[detail,setDetail]=useState<EventRecord|null>(null),[login,setLogin]=useState(false),[toast,setToast]=useState(''),[eventPage,setEventPage]=useState(0),[lab,setLab]=useState(false),[checks,setChecks]=useState<PlaybackChecks>({});
-  const onCheck=useCallback((id:string,url:string,status:string)=>setChecks(c=>({...c,[id]:{status,url,checked_at:new Date().toISOString()}})),[]);
-  const filtered=useMemo(()=>filterEvents(store.events,filters),[store.events,filters]);
-  const stats=useMemo(()=>{const states=store.cameras.map(c=>c.status==='Отключена'?c.status:checks[c.id]?.url===c.stream_url?checks[c.id].status:c.status);return {available:states.filter(s=>s==='Доступна').length,unavailable:states.filter(s=>s==='Недоступна').length,unknown:states.filter(s=>s==='Не проверена').length,disabled:states.filter(s=>s==='Отключена').length};},[checks,store.cameras]);
-  const currentPage=Math.min(eventPage,Math.max(0,Math.ceil(filtered.length/20)-1));
-  const selectPage=(value:Page)=>{setPage(value);location.hash=value;setMenu(false);};
-  useEffect(()=>{const change=()=>{const value=location.hash.slice(1);if(navigation.some(n=>n[0]===value))setPage(value as Page);};addEventListener('hashchange',change);return()=>removeEventListener('hashchange',change);},[]);
-  useEffect(()=>{if(!toast)return;const timeout=setTimeout(()=>setToast(''),6500);return()=>clearTimeout(timeout);},[toast]);
-  const connected=store.mode==='demo'||Boolean(store.mode==='database'&&store.user);
-  const pageTitle=navigation.find(n=>n[0]===page)?.[1];
-  return <div className="op-workspace"><aside className={`op-sidebar ${menu?'open':''}`}><a href="#overview" className="op-brand" onClick={()=>selectPage('overview')}><span><ShieldCheck size={27}/></span><div>QORGAU <b>VISION</b><small>СИТУАЦИОННЫЙ ЦЕНТР</small></div></a><div className="op-city"><span className="op-dot"/>АЛМАТЫ <small>КАЗАХСТАН / UTC+5</small></div><nav aria-label="Разделы QORGAU">{navigation.map(([id,label,Icon])=><button key={id} className={`${page===id?'active':''} ${id==='lab'?'op-lab-link':''}`} onClick={()=>selectPage(id)}><Icon size={19}/><span>{label}</span>{id==='events'&&<small>{store.events.length}</small>}{id==='ai'&&<span className="op-nav-ai">AI</span>}</button>)}</nav><div className="op-sidebar-footer"><Database size={16}/><span>{store.mode==='database'?'Серверное хранилище':store.mode==='demo'?'Локальное DEMO':'Проверка подключения'}<small>Прототип · не ведомственная система</small></span></div></aside>
-    <div className="op-body"><header className="op-topbar"><button className="op-mobile-toggle" onClick={()=>setMenu(!menu)} aria-label="Открыть навигацию"><Menu size={21}/></button><span>Рабочее пространство <b>/ {pageTitle}</b></span><div className="op-topbar-actions"><span className="op-tag">{store.mode==='demo'?'DEMO':store.user?roleNames[store.user.role]:'ПРОТОТИП'}</span><button onClick={()=>void store.refresh()} disabled={store.busy} aria-label="Обновить данные"><RefreshCw size={17} className={store.busy?'op-spin':''}/></button>{store.user?<button onClick={()=>void store.logout().catch(e=>setToast(e.message))} title="Выйти"><LogOut size={17}/><span>{store.user.display_name}</span></button>:<button onClick={()=>setLogin(true)}><LogIn size={17}/><span>Войти</span></button>}</div></header>
-    <main className="op-main"><div className="op-page-heading"><div><span className="op-eyebrow">ALMATY / SITUATION CENTER</span><h1>{page==='overview'?'Город в поле зрения':pageTitle}</h1><p>{page==='overview'?'События, публичные камеры и аналитика в одном пространстве.':'Достоверные данные. Понятные источники. Контроль оператора.'}</p></div>{connected&&store.canWrite&&page!=='lab'&&<button className="op-primary" onClick={()=>setEditing('new')}><Plus size={17}/> Создать событие</button>}</div>
-    {store.mode==='demo'&&<div className="op-mode-note"><span className="op-tag">DEMO</span><span>События учебные и сохраняются только в этом браузере. Публичные камеры — отдельные внешние источники. База, пользователи и AI ещё не подключены.</span></div>}
-    {store.error&&<div role="alert" className="op-error">{store.error} {store.updated&&'Показаны последние загруженные данные.'}<button onClick={()=>void store.refresh()}>Повторить</button>{store.mode==='error'&&<button onClick={()=>{try{store.local();}catch(e){setToast(String(e));}}}>Открыть локальное DEMO</button>}</div>}
-    {store.mode==='loading'?<div className="op-skeleton">Проверка сервера и загрузка данных…</div>:!connected&&page!=='settings'&&page!=='lab'?<div className="op-empty"><ShieldCheck size={44}/><h2>{store.mode==='database'?'Войдите в рабочее пространство':'Хранилище недоступно'}</h2><p>Серверные события доступны только авторизованным пользователям.</p><button className="op-primary" onClick={()=>setLogin(true)}>Войти</button></div>:<>
-    {page==='overview'&&<><div className="op-stats">{[[TriangleAlert,'Событий в системе',store.events.length,`${store.events.filter(e=>e.is_demo).length} учебных записей`],[Radio,'Доступно камер',stats.available,'Проверено воспроизведением'],[Camera,'Недоступно камер',stats.unavailable,`${stats.unknown} не проверено · ${stats.disabled} отключено`],[ChartNoAxesCombined,'Событий в работе',store.events.filter(e=>e.status==='В работе').length,'По текущему статусу']].map(([Icon,label,value,note])=>{const I=Icon as typeof Camera;return <article className="op-stat" key={String(label)}><div><span>{String(label)}</span><I size={19}/></div><strong>{String(value)}</strong><small>{String(note)}</small></article>;})}</div><div className="op-overview-grid"><section className="op-panel op-dashboard-map"><div className="op-between"><h2>Оперативная карта</h2><button className="op-link" onClick={()=>selectPage('map')}>Открыть карту <ArrowUpRight size={15}/></button></div><OperationsMap events={store.events} cameras={store.cameras} compact/></section><section className="op-panel"><div className="op-between"><h2>Последние события</h2><span className="op-muted">{store.events.length}</span></div><EventList events={filterEvents(store.events,emptyFilters).slice(0,5)} onSelect={setDetail}/><button className="op-link" onClick={()=>selectPage('events')}>Все события <ArrowUpRight size={15}/></button></section><section className="op-panel"><h2>Распределение по районам</h2><Bars values={counts(store.events,'district')} label="События по районам"/></section><section className="op-panel"><h2>Динамика событий</h2><Trend events={store.events}/></section></div><div className="op-quick-links">{[['cameras','Видеомониторинг','Публичные камеры и видеостена',Camera],['analytics','Аналитика','Категории, районы и периоды',ChartNoAxesCombined],['ai','QORGAU AI','Сводки на основе данных',Sparkles]].map(([id,label,note,Icon])=>{const I=Icon as typeof Camera;return <button key={String(id)} onClick={()=>selectPage(id as Page)}><I size={24}/><span><strong>{String(label)}</strong><small>{String(note)}</small></span><ArrowUpRight size={20}/></button>;})}</div></>}
-    {page==='map'&&<><div className="op-filters"><Select label="Район" value={filters.district} options={districts.map(d=>d.name)} all="Все районы" onChange={v=>setFilters(f=>({...f,district:v}))}/><Select label="Категория событий" value={filters.category} options={[...new Set(store.events.map(e=>e.category))]} all="Все категории" onChange={v=>setFilters(f=>({...f,category:v}))}/><button className="op-button" onClick={()=>setFilters({...emptyFilters})}>Сбросить все фильтры</button></div><OperationsMap events={filtered} cameras={store.cameras} district={filters.district}/><p className="op-muted">DEMO-события обозначены в карточках. Для учебных экипажей, маршрутов и публичных отметок полиции OSM откройте экспериментальный раздел. Событий на карте: {filtered.length}.</p></>}
-    {page==='events'&&<><div className="op-section-title"><div><h2>Журнал событий <span>{filtered.length}</span></h2><p>Ручная регистрация и история обработки</p></div><button className="op-button" onClick={()=>downloadFile('qorgau-events.csv',eventsCsv(filtered),'text/csv;charset=utf-8')}>Экспорт CSV</button></div><EventFilters filters={filters} onChange={f=>{setFilters(f);setEventPage(0);}}/><div className="op-toolbar"><span>{filtered.length} из {store.events.length} событий</span><button onClick={()=>setFilters({...emptyFilters})}>Сбросить фильтры</button></div><div className="op-table-wrap"><table className="op-table"><thead><tr><th>Событие</th><th>Район</th><th>Категория</th><th>Приоритет</th><th>Статус</th><th>Время · Алматы</th></tr></thead><tbody>{filtered.slice(currentPage*20,currentPage*20+20).map(e=><tr key={e.id}><td><button onClick={()=>setDetail(e)}>{e.title}</button><small>{e.is_demo?'DEMO · учебное':'Ручная регистрация'}</small></td><td>{e.district}</td><td>{e.category}</td><td><span className={`op-priority ${e.priority==='Высокий'?'high':''}`}>{e.priority}</span></td><td><span className="op-tag">{e.status}</span></td><td>{displayTime(e.occurred_at)}</td></tr>)}</tbody></table></div>{!filtered.length&&<div className="op-empty">Событий по выбранным фильтрам нет. Измените фильтры или создайте учебное событие.</div>}<div className="op-pagination"><button disabled={currentPage===0} onClick={()=>setEventPage(currentPage-1)}>← Назад</button><span>{currentPage+1} / {Math.max(1,Math.ceil(filtered.length/20))}</span><button disabled={(currentPage+1)*20>=filtered.length} onClick={()=>setEventPage(currentPage+1)}>Далее →</button></div></>}
-    {page==='cameras'&&<CameraCenter cameras={store.cameras} canAdmin={store.canAdmin} saveCamera={store.saveCamera} checks={checks} onCheck={onCheck}/>}
-    {(page==='analytics'||page==='reports')&&<Analytics key={page} events={store.events} report={page==='reports'}/>}
-    {page==='ai'&&<AiPanel enabled={store.aiEnabled} connected={Boolean(store.user)}/>}
-    {page==='settings'&&<SystemPanel store={store}/>}
-    {page==='lab'&&<><div className="op-notice">Экспериментальная учебная сцена сохранена из предыдущей версии. Здесь статические DEMO-патрули, сценарии и маршруты; они не синхронизируются с центром событий. Поиск публичных профилей не устанавливает личность, проверка телефона только форматирует номер.</div><button className="op-button" onClick={()=>setLab(!lab)}>{lab?'Закрыть учебную сцену':'Открыть учебную сцену'}</button>{lab&&<div className="op-legacy"><Suspense fallback={<p>Загрузка…</p>}><LegacyMap/></Suspense></div>}</>}
-    </>}
-    <footer className="op-footer"><span>QORGAU Vision · прототип ситуационного центра</span><span>{store.updated?`Обновлено ${displayTime(store.updated)}`:'Ожидание данных'} · без автоматической ленты городских происшествий</span></footer></main></div>
-    {editing&&<EventForm existing={editing==='new'?undefined:editing} demo={store.mode==='demo'} onClose={()=>setEditing(null)} onSave={async input=>{await store.saveEvent(input,editing==='new'?undefined:editing);setToast(store.mode==='demo'?'Событие сохранено в локальном DEMO-хранилище.':'Событие сохранено на сервере.');}}/>}
-    {detail&&<EventDetails event={store.events.find(e=>e.id===detail.id)??detail} audit={store.audit} onClose={()=>setDetail(null)} onEdit={store.canWrite?()=>{setEditing(store.events.find(e=>e.id===detail.id)??detail);setDetail(null);}:undefined}/>}
-    {login&&<Login configured={store.mode==='database'} onClose={()=>setLogin(false)} onLogin={store.login}/>}
-    {toast&&<div className="op-toast" role="status">{toast}<button onClick={()=>setToast('')} aria-label="Закрыть уведомление">×</button></div>}
-  </div>;
+  const store = useOperations();
+  const [page, setPage] = useState<Page>(() =>
+      navigation.some((n) => n[0] === location.hash.slice(1))
+        ? (location.hash.slice(1) as Page)
+        : "overview",
+    ),
+    [menu, setMenu] = useState(false);
+  const [filters, setFilters] = useState<Filters>({ ...emptyFilters }),
+    [editing, setEditing] = useState<EventRecord | "new" | null>(null),
+    [detail, setDetail] = useState<EventRecord | null>(null),
+    [login, setLogin] = useState(false),
+    [toast, setToast] = useState(""),
+    [eventPage, setEventPage] = useState(0),
+    [lab, setLab] = useState(false),
+    [checks, setChecks] = useState<PlaybackChecks>({});
+  const onCheck = useCallback(
+    (id: string, url: string, status: string) =>
+      setChecks((c) => ({
+        ...c,
+        [id]: { status, url, checked_at: new Date().toISOString() },
+      })),
+    [],
+  );
+  const filtered = useMemo(
+    () => filterEvents(store.events, filters),
+    [store.events, filters],
+  );
+  const stats = useMemo(() => {
+    const states = store.cameras.map((c) =>
+      c.status === "Отключена"
+        ? c.status
+        : checks[c.id]?.url === c.stream_url
+          ? checks[c.id].status
+          : c.status,
+    );
+    return {
+      available: states.filter((s) => s === "Доступна").length,
+      unavailable: states.filter((s) => s === "Недоступна").length,
+      unknown: states.filter((s) => s === "Не проверена").length,
+      disabled: states.filter((s) => s === "Отключена").length,
+    };
+  }, [checks, store.cameras]);
+  const currentPage = Math.min(
+    eventPage,
+    Math.max(0, Math.ceil(filtered.length / 20) - 1),
+  );
+  const selectPage = (value: Page) => {
+    setPage(value);
+    location.hash = value;
+    setMenu(false);
+  };
+  useEffect(() => {
+    const change = () => {
+      const value = location.hash.slice(1);
+      if (navigation.some((n) => n[0] === value)) setPage(value as Page);
+    };
+    addEventListener("hashchange", change);
+    return () => removeEventListener("hashchange", change);
+  }, []);
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = setTimeout(() => setToast(""), 6500);
+    return () => clearTimeout(timeout);
+  }, [toast]);
+  const connected =
+    store.mode === "demo" || Boolean(store.mode === "database" && store.user);
+  const pageTitle = navigation.find((n) => n[0] === page)?.[1];
+  return (
+    <div className="op-workspace">
+      <aside className={`op-sidebar ${menu ? "open" : ""}`}>
+        <a
+          href="#overview"
+          className="op-brand"
+          onClick={() => selectPage("overview")}
+        >
+          <span>
+            <ShieldCheck size={27} />
+          </span>
+          <div>
+            QORGAU <b>VISION</b>
+            <small>СИТУАЦИОННЫЙ ЦЕНТР</small>
+          </div>
+        </a>
+        <div className="op-city">
+          <span className="op-dot" />
+          АЛМАТЫ <small>КАЗАХСТАН / UTC+5</small>
+        </div>
+        <nav aria-label="Разделы QORGAU">
+          {navigation.map(([id, label, Icon]) => (
+            <button
+              key={id}
+              className={`${page === id ? "active" : ""} ${id === "lab" ? "op-lab-link" : ""}`}
+              onClick={() => selectPage(id)}
+            >
+              <Icon size={19} />
+              <span>{label}</span>
+              {id === "events" && <small>{store.events.length}</small>}
+              {id === "ai" && <span className="op-nav-ai">AI</span>}
+            </button>
+          ))}
+        </nav>
+        <div className="op-sidebar-footer">
+          <Database size={16} />
+          <span>
+            {store.mode === "database"
+              ? "Серверное хранилище"
+              : store.mode === "demo"
+                ? "Локальное DEMO"
+                : "Проверка подключения"}
+            <small>Прототип · не ведомственная система</small>
+          </span>
+        </div>
+      </aside>
+      <div className="op-body">
+        <header className="op-topbar">
+          <button
+            className="op-mobile-toggle"
+            onClick={() => setMenu(!menu)}
+            aria-label="Открыть навигацию"
+          >
+            <Menu size={21} />
+          </button>
+          <span>
+            Рабочее пространство <b>/ {pageTitle}</b>
+          </span>
+          <div className="op-topbar-actions">
+            <span className="op-tag">
+              {store.mode === "demo"
+                ? "DEMO"
+                : store.user
+                  ? roleNames[store.user.role]
+                  : "ПРОТОТИП"}
+            </span>
+            <button
+              onClick={() => void store.refresh()}
+              disabled={store.busy}
+              aria-label="Обновить данные"
+            >
+              <RefreshCw size={17} className={store.busy ? "op-spin" : ""} />
+            </button>
+            {store.user ? (
+              <button
+                onClick={() =>
+                  void store.logout().catch((e) => setToast(e.message))
+                }
+                title="Выйти"
+              >
+                <LogOut size={17} />
+                <span>{store.user.display_name}</span>
+              </button>
+            ) : (
+              <button onClick={() => setLogin(true)}>
+                <LogIn size={17} />
+                <span>Войти</span>
+              </button>
+            )}
+          </div>
+        </header>
+        <main className="op-main">
+          <div className="op-page-heading">
+            <div>
+              <span className="op-eyebrow">ALMATY / SITUATION CENTER</span>
+              <h1>{page === "overview" ? "Город в поле зрения" : pageTitle}</h1>
+              <p>
+                {page === "overview"
+                  ? "События, публичные камеры и аналитика в одном пространстве."
+                  : "Достоверные данные. Понятные источники. Контроль оператора."}
+              </p>
+            </div>
+            {connected && store.canWrite && page !== "lab" && (
+              <button className="op-primary" onClick={() => setEditing("new")}>
+                <Plus size={17} /> Создать событие
+              </button>
+            )}
+          </div>
+          {store.mode === "demo" && (
+            <div className="op-mode-note">
+              <span className="op-tag">DEMO</span>
+              <span>
+                События учебные и сохраняются только в этом браузере. Публичные
+                камеры — отдельные внешние источники. База, пользователи и AI
+                ещё не подключены.
+              </span>
+            </div>
+          )}
+          {store.error && (
+            <div role="alert" className="op-error">
+              {store.error}{" "}
+              {store.updated && "Показаны последние загруженные данные."}
+              <button onClick={() => void store.refresh()}>Повторить</button>
+              {store.mode === "error" && (
+                <button
+                  onClick={() => {
+                    try {
+                      store.local();
+                    } catch (e) {
+                      setToast(String(e));
+                    }
+                  }}
+                >
+                  Открыть локальное DEMO
+                </button>
+              )}
+            </div>
+          )}
+          {store.mode === "loading" ? (
+            <div className="op-skeleton">
+              Проверка сервера и загрузка данных…
+            </div>
+          ) : !connected && page !== "settings" && page !== "lab" ? (
+            <div className="op-empty">
+              <ShieldCheck size={44} />
+              <h2>
+                {store.mode === "database"
+                  ? "Войдите в рабочее пространство"
+                  : "Хранилище недоступно"}
+              </h2>
+              <p>
+                Серверные события доступны только авторизованным пользователям.
+              </p>
+              <button className="op-primary" onClick={() => setLogin(true)}>
+                Войти
+              </button>
+            </div>
+          ) : (
+            <>
+              {page === "overview" && (
+                <>
+                  <div className="op-stats">
+                    {[
+                      [
+                        TriangleAlert,
+                        "Событий в системе",
+                        store.events.length,
+                        `${store.events.filter((e) => e.is_demo).length} учебных записей`,
+                      ],
+                      [
+                        Radio,
+                        "Доступно камер",
+                        stats.available,
+                        "Проверено воспроизведением",
+                      ],
+                      [
+                        Camera,
+                        "Недоступно камер",
+                        stats.unavailable,
+                        `${stats.unknown} не проверено · ${stats.disabled} отключено`,
+                      ],
+                      [
+                        ChartNoAxesCombined,
+                        "Событий в работе",
+                        store.events.filter((e) => e.status === "В работе")
+                          .length,
+                        "По текущему статусу",
+                      ],
+                    ].map(([Icon, label, value, note]) => {
+                      const I = Icon as typeof Camera;
+                      return (
+                        <article className="op-stat" key={String(label)}>
+                          <div>
+                            <span>{String(label)}</span>
+                            <I size={19} />
+                          </div>
+                          <strong>{String(value)}</strong>
+                          <small>{String(note)}</small>
+                        </article>
+                      );
+                    })}
+                  </div>
+                  <div className="op-overview-grid">
+                    <section className="op-panel op-dashboard-map">
+                      <div className="op-between">
+                        <h2>Оперативная карта</h2>
+                        <button
+                          className="op-link"
+                          onClick={() => selectPage("map")}
+                        >
+                          Открыть карту <ArrowUpRight size={15} />
+                        </button>
+                      </div>
+                      <OperationsMap
+                        events={store.events}
+                        cameras={store.cameras}
+                        compact
+                      />
+                    </section>
+                    <section className="op-panel">
+                      <div className="op-between">
+                        <h2>Последние события</h2>
+                        <span className="op-muted">{store.events.length}</span>
+                      </div>
+                      <EventList
+                        events={filterEvents(store.events, emptyFilters).slice(
+                          0,
+                          5,
+                        )}
+                        onSelect={setDetail}
+                      />
+                      <button
+                        className="op-link"
+                        onClick={() => selectPage("events")}
+                      >
+                        Все события <ArrowUpRight size={15} />
+                      </button>
+                    </section>
+                    <section className="op-panel">
+                      <h2>Распределение по районам</h2>
+                      <Bars
+                        values={counts(store.events, "district")}
+                        label="События по районам"
+                      />
+                    </section>
+                    <section className="op-panel">
+                      <h2>Динамика событий</h2>
+                      <Trend events={store.events} />
+                    </section>
+                  </div>
+                  <div className="op-quick-links">
+                    {[
+                      [
+                        "cameras",
+                        "Видеомониторинг",
+                        "Публичные камеры и видеостена",
+                        Camera,
+                      ],
+                      [
+                        "analytics",
+                        "Аналитика",
+                        "Категории, районы и периоды",
+                        ChartNoAxesCombined,
+                      ],
+                      ["ai", "QORGAU AI", "Сводки на основе данных", Sparkles],
+                    ].map(([id, label, note, Icon]) => {
+                      const I = Icon as typeof Camera;
+                      return (
+                        <button
+                          key={String(id)}
+                          onClick={() => selectPage(id as Page)}
+                        >
+                          <I size={24} />
+                          <span>
+                            <strong>{String(label)}</strong>
+                            <small>{String(note)}</small>
+                          </span>
+                          <ArrowUpRight size={20} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+              {page === "map" && (
+                <>
+                  <div className="op-filters">
+                    <Select
+                      label="Район"
+                      value={filters.district}
+                      options={districts.map((d) => d.name)}
+                      all="Все районы"
+                      onChange={(v) =>
+                        setFilters((f) => ({ ...f, district: v }))
+                      }
+                    />
+                    <Select
+                      label="Категория событий"
+                      value={filters.category}
+                      options={[
+                        ...new Set(store.events.map((e) => e.category)),
+                      ]}
+                      all="Все категории"
+                      onChange={(v) =>
+                        setFilters((f) => ({ ...f, category: v }))
+                      }
+                    />
+                    <button
+                      className="op-button"
+                      onClick={() => setFilters({ ...emptyFilters })}
+                    >
+                      Сбросить все фильтры
+                    </button>
+                  </div>
+                  <OperationsMap
+                    events={filtered}
+                    cameras={store.cameras}
+                    district={filters.district}
+                  />
+                  <p className="op-muted">
+                    DEMO-события обозначены в карточках. Для учебных экипажей,
+                    маршрутов и публичных отметок полиции OSM откройте
+                    экспериментальный раздел. Событий на карте:{" "}
+                    {filtered.length}.
+                  </p>
+                </>
+              )}
+              {page === "events" && (
+                <>
+                  <div className="op-section-title">
+                    <div>
+                      <h2>
+                        Журнал событий <span>{filtered.length}</span>
+                      </h2>
+                      <p>Ручная регистрация и история обработки</p>
+                    </div>
+                    <button
+                      className="op-button"
+                      onClick={() =>
+                        downloadFile(
+                          "qorgau-events.csv",
+                          eventsCsv(filtered),
+                          "text/csv;charset=utf-8",
+                        )
+                      }
+                    >
+                      Экспорт CSV
+                    </button>
+                  </div>
+                  <EventFilters
+                    filters={filters}
+                    onChange={(f) => {
+                      setFilters(f);
+                      setEventPage(0);
+                    }}
+                  />
+                  <div className="op-toolbar">
+                    <span>
+                      {filtered.length} из {store.events.length} событий
+                    </span>
+                    <button onClick={() => setFilters({ ...emptyFilters })}>
+                      Сбросить фильтры
+                    </button>
+                  </div>
+                  <div className="op-table-wrap">
+                    <table className="op-table">
+                      <thead>
+                        <tr>
+                          <th>Событие</th>
+                          <th>Район</th>
+                          <th>Категория</th>
+                          <th>Приоритет</th>
+                          <th>Статус</th>
+                          <th>Время · Алматы</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered
+                          .slice(currentPage * 20, currentPage * 20 + 20)
+                          .map((e) => (
+                            <tr key={e.id}>
+                              <td>
+                                <button onClick={() => setDetail(e)}>
+                                  {e.title}
+                                </button>
+                                <small>
+                                  {e.is_demo
+                                    ? "DEMO · учебное"
+                                    : "Ручная регистрация"}
+                                </small>
+                              </td>
+                              <td>{e.district}</td>
+                              <td>{e.category}</td>
+                              <td>
+                                <span
+                                  className={`op-priority ${e.priority === "Высокий" ? "high" : ""}`}
+                                >
+                                  {e.priority}
+                                </span>
+                              </td>
+                              <td>
+                                <span className="op-tag">{e.status}</span>
+                              </td>
+                              <td>{displayTime(e.occurred_at)}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {!filtered.length && (
+                    <div className="op-empty">
+                      Событий по выбранным фильтрам нет. Измените фильтры или
+                      создайте учебное событие.
+                    </div>
+                  )}
+                  <div className="op-pagination">
+                    <button
+                      disabled={currentPage === 0}
+                      onClick={() => setEventPage(currentPage - 1)}
+                    >
+                      ← Назад
+                    </button>
+                    <span>
+                      {currentPage + 1} /{" "}
+                      {Math.max(1, Math.ceil(filtered.length / 20))}
+                    </span>
+                    <button
+                      disabled={(currentPage + 1) * 20 >= filtered.length}
+                      onClick={() => setEventPage(currentPage + 1)}
+                    >
+                      Далее →
+                    </button>
+                  </div>
+                </>
+              )}
+              {page === "cameras" && (
+                <CameraCenter
+                  cameras={store.cameras}
+                  canAdmin={store.canAdmin}
+                  saveCamera={store.saveCamera}
+                  checks={checks}
+                  onCheck={onCheck}
+                />
+              )}
+              {(page === "analytics" || page === "reports") && (
+                <Analytics
+                  key={page}
+                  events={store.events}
+                  report={page === "reports"}
+                />
+              )}
+              {page === "ai" && (
+                <AiPanel
+                  enabled={store.aiEnabled}
+                  connected={Boolean(store.user)}
+                />
+              )}
+              {page === "settings" && <SystemPanel store={store} />}
+              {page === "lab" && (
+                <>
+                  <div className="op-notice">
+                    Экспериментальная учебная сцена сохранена из предыдущей
+                    версии. Здесь статические DEMO-патрули, сценарии и маршруты;
+                    они не синхронизируются с центром событий. Поиск публичных
+                    профилей не устанавливает личность, проверка телефона только
+                    форматирует номер.
+                  </div>
+                  <button className="op-button" onClick={() => setLab(!lab)}>
+                    {lab ? "Закрыть учебную сцену" : "Открыть учебную сцену"}
+                  </button>
+                  {lab && (
+                    <div className="op-legacy">
+                      <Suspense fallback={<p>Загрузка…</p>}>
+                        <LegacyMap />
+                      </Suspense>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+          <footer className="op-footer">
+            <span>QORGAU Vision · прототип ситуационного центра</span>
+            <span>
+              {store.updated
+                ? `Обновлено ${displayTime(store.updated)}`
+                : "Ожидание данных"}{" "}
+              · без автоматической ленты городских происшествий
+            </span>
+          </footer>
+        </main>
+      </div>
+      {editing && (
+        <EventForm
+          existing={editing === "new" ? undefined : editing}
+          demo={store.mode === "demo"}
+          onClose={() => setEditing(null)}
+          onSave={async (input) => {
+            await store.saveEvent(
+              input,
+              editing === "new" ? undefined : editing,
+            );
+            setToast(
+              store.mode === "demo"
+                ? "Событие сохранено в локальном DEMO-хранилище."
+                : "Событие сохранено на сервере.",
+            );
+          }}
+        />
+      )}
+      {detail && (
+        <EventDetails
+          event={store.events.find((e) => e.id === detail.id) ?? detail}
+          audit={store.audit}
+          onClose={() => setDetail(null)}
+          onEdit={
+            store.canWrite
+              ? () => {
+                  setEditing(
+                    store.events.find((e) => e.id === detail.id) ?? detail,
+                  );
+                  setDetail(null);
+                }
+              : undefined
+          }
+        />
+      )}
+      {login && (
+        <Login
+          configured={store.mode === "database"}
+          onClose={() => setLogin(false)}
+          onLogin={store.login}
+        />
+      )}
+      {toast && (
+        <div className="op-toast" role="status">
+          {toast}
+          <button onClick={() => setToast("")} aria-label="Закрыть уведомление">
+            ×
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
-function EventList({events,onSelect}:{events:EventRecord[];onSelect:(e:EventRecord)=>void}) {return <div className="op-event-list">{events.length?events.map(e=><button key={e.id} onClick={()=>onSelect(e)}><span className={`op-event-dot ${e.priority==='Высокий'?'high':''}`}/><span><strong>{e.title}</strong><small>{e.district} · {e.category}</small><small>{e.is_demo?'DEMO · ':''}{displayTime(e.occurred_at)}</small></span><ArrowUpRight size={15}/></button>):<p className="op-muted">События ещё не зарегистрированы.</p>}</div>;}
-function Login({configured,onClose,onLogin}:{configured:boolean;onClose:()=>void;onLogin:(email:string,password:string)=>Promise<void>}) {
-  const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
-  return <Modal title="Вход в QORGAU Vision" onClose={onClose}>{configured?<form className="op-form" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{await onLogin(email,password);onClose();}catch(e){setError(e instanceof Error?e.message:'Ошибка входа');}finally{setPassword('');setBusy(false);}}}><p>Учётную запись создаёт администратор проекта. Публичная регистрация не предусмотрена.</p><label className="op-field"><span>Email</span><input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)}/></label><label className="op-field"><span>Пароль</span><input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>{error&&<p role="alert" className="op-error">{error}</p>}<button className="op-primary" disabled={busy}>{busy?'Проверка…':'Войти'}</button><p className="op-muted">Сессия действует до одного часа. После истечения потребуется повторный вход.</p></form>:<p>Авторизация ещё не настроена. Администратору нужно подключить Supabase и выполнить миграцию базы. Пароли в DEMO-режиме не принимаются и не сохраняются.</p>}</Modal>;
+function EventList({
+  events,
+  onSelect,
+}: {
+  events: EventRecord[];
+  onSelect: (e: EventRecord) => void;
+}) {
+  return (
+    <div className="op-event-list">
+      {events.length ? (
+        events.map((e) => (
+          <button key={e.id} onClick={() => onSelect(e)}>
+            <span
+              className={`op-event-dot ${e.priority === "Высокий" ? "high" : ""}`}
+            />
+            <span>
+              <strong>{e.title}</strong>
+              <small>
+                {e.district} · {e.category}
+              </small>
+              <small>
+                {e.is_demo ? "DEMO · " : ""}
+                {displayTime(e.occurred_at)}
+              </small>
+            </span>
+            <ArrowUpRight size={15} />
+          </button>
+        ))
+      ) : (
+        <p className="op-muted">События ещё не зарегистрированы.</p>
+      )}
+    </div>
+  );
 }
-function SystemPanel({store}:{store:ReturnType<typeof useOperations>}) {
-  const [users,setUsers]=useState<{id:string;role:Role;display_name:string}[]>([]),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
-  async function loadUsers(){setBusy(true);try{setUsers(await api('users'));}catch(e){setMessage(String(e));}finally{setBusy(false);}}
-  return <><div className="op-analytics-grid"><section className="op-panel"><h2>Подключения</h2><dl className="op-details"><dt>Хранилище</dt><dd>{store.mode==='database'?'Серверный API настроен':'Локальное DEMO'}</dd><dt>Авторизация</dt><dd>{store.user?roleNames[store.user.role]:store.mode==='database'?'Требуется вход':'Не настроена'}</dd><dt>QORGAU AI</dt><dd>{store.aiEnabled?'API включён, требуется вход':'Не подключён'}</dd><dt>Автоматические источники событий</dt><dd>Не подключены</dd></dl><p>Сервер: Vercel Functions. Хранилище: PostgreSQL/PostGIS, вход: Supabase Auth. Для подключения нужны SUPABASE_URL и SUPABASE_ANON_KEY только в серверном окружении Vercel и миграция базы.</p><p>AI: OPENAI_API_KEY, OPENAI_MODEL, AI_ENABLED=true. Расходы API согласуются отдельно. Ключи не вводятся в этом интерфейсе.</p></section><section className="op-panel"><h2>Достоверность данных</h2><p>Ручная регистрация — сообщение пользователя, а не независимое подтверждение. DEMO — учебные данные. Каталог камер не гарантирует наличие эфира. Отметки OSM могут быть неполными и неофициальными.</p><p>Координаты районов — ориентиры навигации. Точное расположение трёх камер Шымбулака не подтверждено. Система не определяет личности и не оценивает опасность людей.</p><a className="op-link" href="/data/SOURCES.md" target="_blank" rel="noreferrer">Источники и лицензии геоданных ↗</a><a className="op-link" href="/data/PUBLIC-SOURCES.md" target="_blank" rel="noreferrer">Проверка публичных источников ↗</a></section></div><section className="op-panel"><h2>Внешние источники</h2><div className="op-source-grid"><a href="https://shymbulak.com/live/" target="_blank" rel="noreferrer"><strong>Шымбулак ↗</strong><p>Владелец трёх существующих публичных трансляций.</p></a><a href={twoGisTrafficUrl()} target="_blank" rel="noreferrer"><strong>2ГИС · пробки Алматы ↗</strong><p>Внешний сервис. Дорожные данные внутри QORGAU не загружаются.</p></a>{additionalCameraLinks.map(s=><a key={s.url} href={s.url} target="_blank" rel="noreferrer"><strong>{s.name} ↗</strong><p>{s.note} Каталог, не подключённый поток.</p></a>)}</div></section>
-    {store.user?.role==='admin'&&<section className="op-panel"><h2>Пользователи и роли</h2><p>Новые аккаунты и восстановление доступа — через Supabase Auth. Ниже изменяются роли существующих пользователей.</p><button className="op-button" disabled={busy} onClick={()=>void loadUsers()}>Загрузить пользователей</button>{users.map(u=><div className="op-user-row" key={u.id}><span>{u.display_name}<small>{u.id}</small></span><select aria-label={`Роль ${u.display_name}`} disabled={busy||u.id===store.user?.id} value={u.role} onChange={async e=>{setBusy(true);try{await api('users','PATCH',{id:u.id,role:e.target.value});await loadUsers();setMessage('Роль обновлена.');}catch(e){setMessage(String(e));}finally{setBusy(false);}}}>{Object.entries(roleNames).map(([id,name])=><option value={id} key={id}>{name}</option>)}</select></div>)}{message&&<p role="status">{message}</p>}</section>}
-    <section className="op-panel"><h2>Журнал действий</h2><p>Последние 1000 действий доступного хранилища; серверный журнал записывает изменения данных и ролей. Входы дополнительно регистрирует Supabase Auth.</p>{store.audit.length?<div className="op-table-wrap"><table className="op-table"><thead><tr><th>Время</th><th>Действие</th><th>Объект</th><th>Пользователь</th></tr></thead><tbody>{store.audit.slice(0,100).map(a=><tr key={a.id}><td>{displayTime(a.created_at)}</td><td>{a.action}</td><td>{a.entity_type} / {a.entity_id}</td><td>{a.actor??'Система'}</td></tr>)}</tbody></table><small>Показаны первые 100 записей. История конкретного события доступна в его карточке.</small></div>:<p className="op-muted">Действий пока нет или требуется вход.</p>}</section></>;
+function Login({
+  configured,
+  onClose,
+  onLogin,
+}: {
+  configured: boolean;
+  onClose: () => void;
+  onLogin: (email: string, password: string) => Promise<void>;
+}) {
+  const [email, setEmail] = useState(""),
+    [password, setPassword] = useState(""),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false);
+  return (
+    <Modal title="Вход в QORGAU Vision" onClose={onClose}>
+      {configured ? (
+        <form
+          className="op-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError("");
+            try {
+              await onLogin(email, password);
+              onClose();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "Ошибка входа");
+            } finally {
+              setPassword("");
+              setBusy(false);
+            }
+          }}
+        >
+          <p>
+            Учётную запись создаёт администратор проекта. Публичная регистрация
+            не предусмотрена.
+          </p>
+          <label className="op-field">
+            <span>Email</span>
+            <input
+              type="email"
+              autoComplete="username"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
+          <label className="op-field">
+            <span>Пароль</span>
+            <input
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
+          {error && (
+            <p role="alert" className="op-error">
+              {error}
+            </p>
+          )}
+          <button className="op-primary" disabled={busy}>
+            {busy ? "Проверка…" : "Войти"}
+          </button>
+          <p className="op-muted">
+            Сессия действует до одного часа. После истечения потребуется
+            повторный вход.
+          </p>
+        </form>
+      ) : (
+        <p>
+          Авторизация ещё не настроена. Администратору нужно подключить Supabase
+          и выполнить миграцию базы. Пароли в DEMO-режиме не принимаются и не
+          сохраняются.
+        </p>
+      )}
+    </Modal>
+  );
+}
+function SystemPanel({ store }: { store: ReturnType<typeof useOperations> }) {
+  const [users, setUsers] = useState<
+      { id: string; role: Role; display_name: string }[]
+    >([]),
+    [message, setMessage] = useState(""),
+    [busy, setBusy] = useState(false);
+  async function loadUsers() {
+    setBusy(true);
+    try {
+      setUsers(await api("users"));
+    } catch (e) {
+      setMessage(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <>
+      <div className="op-analytics-grid">
+        <section className="op-panel">
+          <h2>Подключения</h2>
+          <dl className="op-details">
+            <dt>Хранилище</dt>
+            <dd>
+              {store.mode === "database"
+                ? "Серверный API настроен"
+                : "Локальное DEMO"}
+            </dd>
+            <dt>Авторизация</dt>
+            <dd>
+              {store.user
+                ? roleNames[store.user.role]
+                : store.mode === "database"
+                  ? "Требуется вход"
+                  : "Не настроена"}
+            </dd>
+            <dt>QORGAU AI</dt>
+            <dd>
+              {store.aiEnabled ? "API включён, требуется вход" : "Не подключён"}
+            </dd>
+            <dt>Автоматические источники событий</dt>
+            <dd>Не подключены</dd>
+          </dl>
+          <p>
+            Сервер: Vercel Functions. Хранилище: PostgreSQL/PostGIS, вход:
+            Supabase Auth. Для подключения нужны SUPABASE_URL и
+            SUPABASE_ANON_KEY только в серверном окружении Vercel и миграция
+            базы.
+          </p>
+          <p>
+            AI: OPENAI_API_KEY, OPENAI_MODEL, AI_ENABLED=true. Расходы API
+            согласуются отдельно. Ключи не вводятся в этом интерфейсе.
+          </p>
+        </section>
+        <section className="op-panel">
+          <h2>Достоверность данных</h2>
+          <p>
+            Ручная регистрация — сообщение пользователя, а не независимое
+            подтверждение. DEMO — учебные данные. Каталог камер не гарантирует
+            наличие эфира. Отметки OSM могут быть неполными и неофициальными.
+          </p>
+          <p>
+            Координаты районов — ориентиры навигации. Точное расположение трёх
+            камер Шымбулака не подтверждено. Система не определяет личности и не
+            оценивает опасность людей.
+          </p>
+          <a
+            className="op-link"
+            href="/data/SOURCES.md"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Источники и лицензии геоданных ↗
+          </a>
+          <a
+            className="op-link"
+            href="/data/PUBLIC-SOURCES.md"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Проверка публичных источников ↗
+          </a>
+        </section>
+      </div>
+      <section className="op-panel">
+        <h2>Внешние источники</h2>
+        <div className="op-source-grid">
+          <a
+            href="https://shymbulak.com/live/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <strong>Шымбулак ↗</strong>
+            <p>Владелец трёх существующих публичных трансляций.</p>
+          </a>
+          <a href={twoGisTrafficUrl()} target="_blank" rel="noreferrer">
+            <strong>2ГИС · пробки Алматы ↗</strong>
+            <p>Внешний сервис. Дорожные данные внутри QORGAU не загружаются.</p>
+          </a>
+          {additionalCameraLinks.map((s) => (
+            <a key={s.url} href={s.url} target="_blank" rel="noreferrer">
+              <strong>{s.name} ↗</strong>
+              <p>{s.note} Каталог, не подключённый поток.</p>
+            </a>
+          ))}
+        </div>
+      </section>
+      {store.user?.role === "admin" && (
+        <section className="op-panel">
+          <h2>Пользователи и роли</h2>
+          <p>
+            Новые аккаунты и восстановление доступа — через Supabase Auth. Ниже
+            изменяются роли существующих пользователей.
+          </p>
+          <button
+            className="op-button"
+            disabled={busy}
+            onClick={() => void loadUsers()}
+          >
+            Загрузить пользователей
+          </button>
+          {users.map((u) => (
+            <div className="op-user-row" key={u.id}>
+              <span>
+                {u.display_name}
+                <small>{u.id}</small>
+              </span>
+              <select
+                aria-label={`Роль ${u.display_name}`}
+                disabled={busy || u.id === store.user?.id}
+                value={u.role}
+                onChange={async (e) => {
+                  setBusy(true);
+                  try {
+                    await api("users", "PATCH", {
+                      id: u.id,
+                      role: e.target.value,
+                    });
+                    await loadUsers();
+                    setMessage("Роль обновлена.");
+                  } catch (e) {
+                    setMessage(String(e));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {Object.entries(roleNames).map(([id, name]) => (
+                  <option value={id} key={id}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+          {message && <p role="status">{message}</p>}
+        </section>
+      )}
+      <section className="op-panel">
+        <h2>Журнал действий</h2>
+        <p>
+          Последние 1000 действий доступного хранилища; серверный журнал
+          записывает изменения данных и ролей. Входы дополнительно регистрирует
+          Supabase Auth.
+        </p>
+        {store.audit.length ? (
+          <div className="op-table-wrap">
+            <table className="op-table">
+              <thead>
+                <tr>
+                  <th>Время</th>
+                  <th>Действие</th>
+                  <th>Объект</th>
+                  <th>Пользователь</th>
+                </tr>
+              </thead>
+              <tbody>
+                {store.audit.slice(0, 100).map((a) => (
+                  <tr key={a.id}>
+                    <td>{displayTime(a.created_at)}</td>
+                    <td>{a.action}</td>
+                    <td>
+                      {a.entity_type} / {a.entity_id}
+                    </td>
+                    <td>{a.actor ?? "Система"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <small>
+              Показаны первые 100 записей. История конкретного события доступна
+              в его карточке.
+            </small>
+          </div>
+        ) : (
+          <p className="op-muted">Действий пока нет или требуется вход.</p>
+        )}
+      </section>
+    </>
+  );
 }

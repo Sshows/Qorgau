@@ -1,25 +1,313 @@
-import { useState } from 'react';
-import { counts,timeSeries,filterEvents,eventsCsv,downloadFile,displayTime,emptyFilters } from './operations';
-import type { EventRecord,Filters } from './operations';
-import { EventFilters } from './OperationForms';
-export function Bars({values,label}:{values:[string,number][];label:string}) {
-  const max=Math.max(1,...values.map(v=>v[1]));
-  return <div className="op-bars" aria-label={label}>{values.length?values.map(([name,n])=><div key={name}><span>{name}</span><div className="op-bar-track"><i style={{width:`${n/max*100}%`}}/></div><strong>{n}</strong></div>):<p className="op-muted">За выбранный период записей нет.</p>}</div>;
+import { useState } from "react";
+import {
+  counts,
+  timeSeries,
+  filterEvents,
+  eventsCsv,
+  downloadFile,
+  displayTime,
+  emptyFilters,
+} from "./operations";
+import type { EventRecord, Filters } from "./operations";
+import { EventFilters } from "./OperationForms";
+export function Bars({
+  values,
+  label,
+}: {
+  values: [string, number][];
+  label: string;
+}) {
+  const max = Math.max(1, ...values.map((v) => v[1]));
+  return (
+    <div className="op-bars" aria-label={label}>
+      {values.length ? (
+        values.map(([name, n]) => (
+          <div key={name}>
+            <span>{name}</span>
+            <div className="op-bar-track">
+              <i style={{ width: `${(n / max) * 100}%` }} />
+            </div>
+            <strong>{n}</strong>
+          </div>
+        ))
+      ) : (
+        <p className="op-muted">За выбранный период записей нет.</p>
+      )}
+    </div>
+  );
 }
-export function Trend({events,weekly=false}:{events:EventRecord[];weekly?:boolean}) {
-  const values=timeSeries(events,weekly),max=Math.max(1,...values.map(v=>v[1]));
-  return <><div className="op-trend" role="img" aria-label={`События ${weekly?'по неделям':'по дням'}: ${values.map(v=>v.join(': ')).join(', ')||'нет данных'}`}>{values.length?values.slice(-90).map(([day,count])=><div key={day} title={`${day}: ${count}`}><strong>{count}</strong><i style={{height:`${Math.max(2,count/max*125)}px`}}/><small>{day.slice(5)}</small></div>):<p className="op-muted">Нет данных для графика.</p>}</div>{values.length>90&&<small>На графике последние 90 интервалов; итог включает все выбранные записи.</small>}</>;
+export function Trend({
+  events,
+  weekly = false,
+}: {
+  events: EventRecord[];
+  weekly?: boolean;
+}) {
+  const values = timeSeries(events, weekly),
+    max = Math.max(1, ...values.map((v) => v[1]));
+  return (
+    <>
+      <div
+        className="op-trend"
+        role="img"
+        aria-label={`События ${weekly ? "по неделям" : "по дням"}: ${values.map((v) => v.join(": ")).join(", ") || "нет данных"}`}
+      >
+        {values.length ? (
+          values.slice(-90).map(([day, count]) => (
+            <div key={day} title={`${day}: ${count}`}>
+              <strong>{count}</strong>
+              <i style={{ height: `${Math.max(2, (count / max) * 125)}px` }} />
+              <small>{day.slice(5)}</small>
+            </div>
+          ))
+        ) : (
+          <p className="op-muted">Нет данных для графика.</p>
+        )}
+      </div>
+      {values.length > 90 && (
+        <small>
+          На графике последние 90 интервалов; итог включает все выбранные
+          записи.
+        </small>
+      )}
+    </>
+  );
 }
-export default function Analytics({events,report=false}:{events:EventRecord[];report?:boolean}) {
-  const [filters,setFilters]=useState<Filters>({...emptyFilters}),[fromB,setFromB]=useState(''),[toB,setToB]=useState(''),[weekly,setWeekly]=useState(false),[title,setTitle]=useState('Сводка зарегистрированных событий'),[metrics,setMetrics]=useState(['categories','districts','statuses','trend','table']);
-  const selected=filterEvents(events,filters),comparison=filterEvents(events,{...filters,from:fromB,to:toB});const demo=selected.filter(e=>e.is_demo).length;
-  const [generated,setGenerated]=useState(()=>new Date().toISOString());
-  return <><div className="op-section-title no-print"><div><h2>{report?'Отчёты':'Аналитический центр'}</h2><p>Показатели рассчитываются по зарегистрированным записям</p></div><div className="op-actions"><button className="op-button" onClick={()=>downloadFile('qorgau-events.csv',eventsCsv(selected),'text/csv;charset=utf-8')}>Экспорт CSV</button>{report&&<button className="op-primary" onClick={()=>{setGenerated(new Date().toISOString());setTimeout(()=>window.print(),50);}}>Печать / сохранить PDF</button>}</div></div><div className="no-print"><EventFilters filters={filters} onChange={setFilters} advanced={false}/>{report&&<><label className="op-field"><span>Название отчёта</span><input value={title} maxLength={180} onChange={e=>setTitle(e.target.value)}/></label><div className="op-toolbar">{[['categories','Категории'],['districts','Районы'],['statuses','Статусы'],['trend','Динамика'],['table','Таблица']].map(([key,label])=><label key={key}><input type="checkbox" checked={metrics.includes(key)} onChange={()=>setMetrics(m=>m.includes(key)?m.filter(x=>x!==key):[...m,key])}/>{label}</label>)}</div></>}
-    <div className="op-panel op-comparison"><h3>Сравнение с другим периодом</h3><label className="op-field"><span>Начало второго периода</span><input type="date" value={fromB} onChange={e=>setFromB(e.target.value)}/></label><label className="op-field"><span>Конец второго периода</span><input type="date" min={fromB} value={toB} onChange={e=>setToB(e.target.value)}/></label><p>{fromB&&toB&&fromB<=toB?`Текущая выборка: ${selected.length} · Второй период: ${comparison.length} · Разница: ${selected.length-comparison.length>0?'+':''}${selected.length-comparison.length}${comparison.length?` (${Math.round((selected.length-comparison.length)/comparison.length*100)}%)`:' · Процент не рассчитывается при нулевой базе'}`:'Укажите обе даты второго периода. Остальные фильтры применяются одинаково.'}</p></div></div>
-    <article className="op-report"><div className="op-report-title"><div><span className="op-eyebrow">QORGAU VISION / ANALYTICS</span><h2>{report?title:'Сводка по выбранным данным'}</h2><p>{filters.from||'Начало наблюдений'} — {filters.to||'Все даты'} · {filters.district||'Все районы'} · {filters.category||'Все категории'}</p><p className="op-muted">Сформировано: {displayTime(generated)} · время Алматы · статус: {filters.status||'все'} · источник: {filters.provenance||'все записи'}</p></div><span className="op-tag">{demo===selected.length&&demo?'DEMO':demo?'Содержит DEMO':'Зарегистрированные данные'}</span></div>
-    <p>В выбранной совокупности <strong>{selected.length}</strong> событий, из них учебных — <strong>{demo}</strong>, закрытых — <strong>{selected.filter(e=>e.status==='Закрыто').length}</strong>. Это статистика записей QORGAU, она не отражает полную ситуацию в городе.</p>
-    {fromB&&toB&&fromB<=toB&&<p>Сравнение с {fromB} — {toB}: {comparison.length} событий; разница {selected.length-comparison.length}. Периоды могут иметь разную длительность.</p>}
-    <div className="op-analytics-grid">{(!report||metrics.includes('categories'))&&<section className="op-panel"><h3>Категории событий</h3><Bars values={counts(selected,'category')} label="Категории"/></section>}{(!report||metrics.includes('districts'))&&<section className="op-panel"><h3>Распределение по районам</h3><Bars values={counts(selected,'district')} label="Районы"/></section>}{(!report||metrics.includes('statuses'))&&<section className="op-panel"><h3>Статусы</h3><Bars values={counts(selected,'status')} label="Статусы"/></section>}{(!report||metrics.includes('trend'))&&<section className="op-panel"><div className="op-between"><h3>Динамика регистрации</h3><label className="no-print"><input type="checkbox" checked={weekly} onChange={e=>setWeekly(e.target.checked)}/> По неделям</label></div><Trend events={selected} weekly={weekly}/></section>}</div>
-    {report&&metrics.includes('table')&&<div className="op-table-wrap"><table className="op-table"><thead><tr><th>Событие</th><th>Район</th><th>Категория</th><th>Дата · Алматы</th><th>Статус</th><th>Происхождение</th></tr></thead><tbody>{selected.map(e=><tr key={e.id}><td>{e.title}</td><td>{e.district}</td><td>{e.category}</td><td>{displayTime(e.occurred_at)}</td><td>{e.status}</td><td>{e.is_demo?'DEMO':e.source}</td></tr>)}</tbody></table></div>}
-    <p className="op-muted">Источник: {events.length} записей текущего хранилища, отобранных по фильтрам. Тепловая карта не включена: достоверность и полнота координат пока недостаточны для интерпретации городской плотности происшествий.</p></article></>;
+export default function Analytics({
+  events,
+  report = false,
+}: {
+  events: EventRecord[];
+  report?: boolean;
+}) {
+  const [filters, setFilters] = useState<Filters>({ ...emptyFilters }),
+    [fromB, setFromB] = useState(""),
+    [toB, setToB] = useState(""),
+    [weekly, setWeekly] = useState(false),
+    [title, setTitle] = useState("Сводка зарегистрированных событий"),
+    [metrics, setMetrics] = useState([
+      "categories",
+      "districts",
+      "statuses",
+      "trend",
+      "table",
+    ]);
+  const selected = filterEvents(events, filters),
+    comparison = filterEvents(events, { ...filters, from: fromB, to: toB });
+  const demo = selected.filter((e) => e.is_demo).length;
+  const [generated, setGenerated] = useState(() => new Date().toISOString());
+  return (
+    <>
+      <div className="op-section-title no-print">
+        <div>
+          <h2>{report ? "Отчёты" : "Аналитический центр"}</h2>
+          <p>Показатели рассчитываются по зарегистрированным записям</p>
+        </div>
+        <div className="op-actions">
+          <button
+            className="op-button"
+            onClick={() =>
+              downloadFile(
+                "qorgau-events.csv",
+                eventsCsv(selected),
+                "text/csv;charset=utf-8",
+              )
+            }
+          >
+            Экспорт CSV
+          </button>
+          {report && (
+            <button
+              className="op-primary"
+              onClick={() => {
+                setGenerated(new Date().toISOString());
+                setTimeout(() => window.print(), 50);
+              }}
+            >
+              Печать / сохранить PDF
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="no-print">
+        <EventFilters
+          filters={filters}
+          onChange={setFilters}
+          advanced={false}
+        />
+        {report && (
+          <>
+            <label className="op-field">
+              <span>Название отчёта</span>
+              <input
+                value={title}
+                maxLength={180}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </label>
+            <div className="op-toolbar">
+              {[
+                ["categories", "Категории"],
+                ["districts", "Районы"],
+                ["statuses", "Статусы"],
+                ["trend", "Динамика"],
+                ["table", "Таблица"],
+              ].map(([key, label]) => (
+                <label key={key}>
+                  <input
+                    type="checkbox"
+                    checked={metrics.includes(key)}
+                    onChange={() =>
+                      setMetrics((m) =>
+                        m.includes(key)
+                          ? m.filter((x) => x !== key)
+                          : [...m, key],
+                      )
+                    }
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </>
+        )}
+        <div className="op-panel op-comparison">
+          <h3>Сравнение с другим периодом</h3>
+          <label className="op-field">
+            <span>Начало второго периода</span>
+            <input
+              type="date"
+              value={fromB}
+              onChange={(e) => setFromB(e.target.value)}
+            />
+          </label>
+          <label className="op-field">
+            <span>Конец второго периода</span>
+            <input
+              type="date"
+              min={fromB}
+              value={toB}
+              onChange={(e) => setToB(e.target.value)}
+            />
+          </label>
+          <p>
+            {fromB && toB && fromB <= toB
+              ? `Текущая выборка: ${selected.length} · Второй период: ${comparison.length} · Разница: ${selected.length - comparison.length > 0 ? "+" : ""}${selected.length - comparison.length}${comparison.length ? ` (${Math.round(((selected.length - comparison.length) / comparison.length) * 100)}%)` : " · Процент не рассчитывается при нулевой базе"}`
+              : "Укажите обе даты второго периода. Остальные фильтры применяются одинаково."}
+          </p>
+        </div>
+      </div>
+      <article className="op-report">
+        <div className="op-report-title">
+          <div>
+            <span className="op-eyebrow">QORGAU VISION / ANALYTICS</span>
+            <h2>{report ? title : "Сводка по выбранным данным"}</h2>
+            <p>
+              {filters.from || "Начало наблюдений"} — {filters.to || "Все даты"}{" "}
+              · {filters.district || "Все районы"} ·{" "}
+              {filters.category || "Все категории"}
+            </p>
+            <p className="op-muted">
+              Сформировано: {displayTime(generated)} · время Алматы · статус:{" "}
+              {filters.status || "все"} · источник:{" "}
+              {filters.provenance || "все записи"}
+            </p>
+          </div>
+          <span className="op-tag">
+            {demo === selected.length && demo
+              ? "DEMO"
+              : demo
+                ? "Содержит DEMO"
+                : "Зарегистрированные данные"}
+          </span>
+        </div>
+        <p>
+          В выбранной совокупности <strong>{selected.length}</strong> событий,
+          из них учебных — <strong>{demo}</strong>, закрытых —{" "}
+          <strong>
+            {selected.filter((e) => e.status === "Закрыто").length}
+          </strong>
+          . Это статистика записей QORGAU, она не отражает полную ситуацию в
+          городе.
+        </p>
+        {fromB && toB && fromB <= toB && (
+          <p>
+            Сравнение с {fromB} — {toB}: {comparison.length} событий; разница{" "}
+            {selected.length - comparison.length}. Периоды могут иметь разную
+            длительность.
+          </p>
+        )}
+        <div className="op-analytics-grid">
+          {(!report || metrics.includes("categories")) && (
+            <section className="op-panel">
+              <h3>Категории событий</h3>
+              <Bars values={counts(selected, "category")} label="Категории" />
+            </section>
+          )}
+          {(!report || metrics.includes("districts")) && (
+            <section className="op-panel">
+              <h3>Распределение по районам</h3>
+              <Bars values={counts(selected, "district")} label="Районы" />
+            </section>
+          )}
+          {(!report || metrics.includes("statuses")) && (
+            <section className="op-panel">
+              <h3>Статусы</h3>
+              <Bars values={counts(selected, "status")} label="Статусы" />
+            </section>
+          )}
+          {(!report || metrics.includes("trend")) && (
+            <section className="op-panel">
+              <div className="op-between">
+                <h3>Динамика регистрации</h3>
+                <label className="no-print">
+                  <input
+                    type="checkbox"
+                    checked={weekly}
+                    onChange={(e) => setWeekly(e.target.checked)}
+                  />{" "}
+                  По неделям
+                </label>
+              </div>
+              <Trend events={selected} weekly={weekly} />
+            </section>
+          )}
+        </div>
+        {report && metrics.includes("table") && (
+          <div className="op-table-wrap">
+            <table className="op-table">
+              <thead>
+                <tr>
+                  <th>Событие</th>
+                  <th>Район</th>
+                  <th>Категория</th>
+                  <th>Дата · Алматы</th>
+                  <th>Статус</th>
+                  <th>Происхождение</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selected.map((e) => (
+                  <tr key={e.id}>
+                    <td>{e.title}</td>
+                    <td>{e.district}</td>
+                    <td>{e.category}</td>
+                    <td>{displayTime(e.occurred_at)}</td>
+                    <td>{e.status}</td>
+                    <td>{e.is_demo ? "DEMO" : e.source}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="op-muted">
+          Источник: {events.length} записей текущего хранилища, отобранных по
+          фильтрам. Тепловая карта не включена: достоверность и полнота
+          координат пока недостаточны для интерпретации городской плотности
+          происшествий.
+        </p>
+      </article>
+    </>
+  );
 }
