@@ -3,4 +3,5 @@ dist/
 public/cesium/
 .vercel/
 .env*
+!.env.example
 *.tsbuildinfo
