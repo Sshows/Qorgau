@@ -1,5 +1,17 @@
 # Выпуск 3 ноября 2026
 
+## Обновление интерфейса — 19:53 Алматы
+
+- Новый дизайн и рабочие переходы опубликованы на https://qorgau-vision-mad.vercel.app/.
+- Выпущенный коммит: 50b17c7e9912408335cc3524e18002ca2c301a0a.
+- Deployment: dpl_Rxw7qZ8WHm2TQmTTr8PdvkdizBgN, production, READY; проверен до promote.
+- GitHub Actions 41657289502 — success, 24 теста, TypeScript и production build.
+- После promote проверены публичные HTTP 200 страницы/health и 401 событий без сессии. В браузере подтверждён новый интерфейс, спутниковая карта и переход из показателя камер с фильтром. На просмотренном экране нет ошибок консоли; отфильтрованные runtime-логи deployment за последние 15 минут пусты.
+- По выбору владельца сначала дизайн; подключение AI следующим этапом. База и настоящие пользователи пока не подключены.
+- Приёмка: [DESIGN-V2.md](DESIGN-V2.md). Исследование OSIRIS: [CAMERA-RESEARCH.md](CAMERA-RESEARCH.md).
+
+## Предыдущая версия
+
 - Сайт: https://qorgau-vision-mad.vercel.app/
 - Проект: https://vercel.com/mads-projects-27f6c416/qorgau-vision
 - GitHub PR: https://github.com/Sshows/Qorgau/pull/1
