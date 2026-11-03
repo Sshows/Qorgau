@@ -119,7 +119,7 @@ export async function fetchPublicText(
   )
     throw new Error("Источник не разрешён");
   const response = await fetcher(url, {
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(7_500),
     redirect: "error",
     headers: {
       Accept:

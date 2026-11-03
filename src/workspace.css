@@ -42,16 +42,18 @@
   border-radius: 0 0 7px 7px;
 }
 .op-workspace {
-  --op-bg: #080f1b;
-  --op-panel: #101d2e;
-  --op-line: #1e3045;
-  --op-text: #e6eef7;
-  --op-muted: #8298b0;
-  --op-cyan: #26c7ea;
-  font-family: Inter, "Segoe UI", sans-serif;
+  --op-bg: #08101c;
+  --op-panel: rgba(16, 29, 46, 0.8);
+  --op-line: rgba(120, 175, 215, 0.16);
+  --op-text: #e8eff7;
+  --op-muted: #93a8be;
+  --op-cyan: #38cde8;
+  font-family: var(--font-sans);
   background:
-    radial-gradient(ellipse at 75% 0, #10213955, transparent 52%), #080f1b;
-  font-size: 12px;
+    radial-gradient(ellipse at 75% 0, rgba(24, 58, 92, 0.34), transparent 55%),
+    #08101c;
+  font-size: 13.5px;
+  font-weight: 480;
 }
 .op-workspace button:focus-visible,
 .op-workspace a:focus-visible,

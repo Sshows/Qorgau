@@ -470,25 +470,39 @@ export default function CameraCenter({
     );
   return (
     <div className="cv-page" ref={topRef}>
-      <div className="cv-heading">
-        <div>
-          <span className="cv-kicker">PUBLIC CAMERA NETWORK</span>
-          <h1>
-            <Camera size={23} />
-            Видеонаблюдение{" "}
-            <span className="cv-live-label">ПУБЛИЧНЫЕ ИСТОЧНИКИ</span>
-          </h1>
-          <p>Алматы, область и города Казахстана · публичные видео и снимки</p>
-        </div>
-        {canAdmin && (
+      {canAdmin && (
+        <div className="cv-heading">
+          <div>
+            <span className="cv-kicker">КАТАЛОГ КАМЕР</span>
+            <h1>
+              <Camera size={22} />
+              Видеонаблюдение{" "}
+              <span className="cv-live-label">УПРАВЛЕНИЕ</span>
+            </h1>
+            <p>Алматы, область и города Казахстана · публичные видео и снимки</p>
+          </div>
           <button className="op-primary" onClick={() => setEdit("new")}>
             <Plus size={16} />
             Добавить камеру
           </button>
-        )}
-      </div>
+        </div>
+      )}
       <div className="cv-filter-bar">
-        <Select label="Город / регион" value={catalogue.city} onChange={(city) => update({ city, district: "" })} options={cities} all="Все города и регионы" />
+        <label className="op-field cv-search">
+          <span>Поиск</span>
+          <input
+            value={catalogue.query}
+            placeholder="Название, адрес или ориентир…"
+            onChange={(e) => update({ query: e.target.value })}
+          />
+        </label>
+        <Select
+          label="Город / регион"
+          value={catalogue.city}
+          onChange={(city) => update({ city, district: "" })}
+          options={cities}
+          all="Все регионы"
+        />
         <Select
           label="Район"
           value={catalogue.district}
@@ -497,46 +511,51 @@ export default function CameraCenter({
           all="Все районы"
         />
         <Select
-          label="Тип камеры"
+          label="Тип"
           value={catalogue.type}
           onChange={(type) => update({ type })}
           options={cameraTypes}
           all="Все типы"
         />
-        <Select
-          label="Статус"
-          value={catalogue.status}
-          onChange={(status) => update({ status })}
-          options={cameraStatuses}
-          all="Все статусы"
-        />
-        <label className="op-field"><span>Формат источника</span><select value={catalogue.stream} onChange={(e) => update({ stream: e.target.value })}><option value="">Все форматы</option>{Object.entries(cameraStreamLabels).map(([id, label]) => <option value={id} key={id}>{label}</option>)}</select></label>
-        <label className="op-field cv-search">
-          <span>Поиск камеры</span>
-          <input
-            value={catalogue.query}
-            placeholder="Название, адрес или объект…"
-            onChange={(e) => update({ query: e.target.value })}
-          />
+        <label className="op-field">
+          <span>Формат</span>
+          <select
+            value={catalogue.stream}
+            onChange={(e) => update({ stream: e.target.value })}
+          >
+            <option value="">Все форматы</option>
+            {Object.entries(cameraStreamLabels).map(([id, label]) => (
+              <option value={id} key={id}>
+                {label}
+              </option>
+            ))}
+          </select>
         </label>
         <button
           className="cv-reset"
           onClick={() => setCatalogue({ ...initialCatalogue })}
         >
-          <RotateCcw size={15} />
-          <span>Сбросить</span>
+          <RotateCcw size={14} />
+          <span>Сброс</span>
         </button>
       </div>
-      <div className="cv-favorites-bar"><button className="cv-favorites-filter" aria-pressed={catalogue.favorites} onClick={() => update({ favorites: !catalogue.favorites })}><Heart size={14} fill={catalogue.favorites ? "currentColor" : "none"} />Только избранные ({cameras.filter((c) => favorites.includes(c.id)).length})</button><span>Видео и снимки имеют отдельные форматы. Потоки подключаются по запросу.</span></div>
       <div className="cv-summary">
-        <button onClick={() => update({ status: "" })}>
-          <Camera size={17} />
+        <button
+          aria-pressed={catalogue.status === ""}
+          onClick={() => update({ status: "" })}
+        >
+          <Camera size={15} />
           <strong>{cameras.length}</strong>
-          <span>в каталоге</span>
+          <span>все</span>
         </button>
         <button
           className="available"
-          onClick={() => update({ status: "Доступна" })}
+          aria-pressed={catalogue.status === "Доступна"}
+          onClick={() =>
+            update({
+              status: catalogue.status === "Доступна" ? "" : "Доступна",
+            })
+          }
         >
           <i />
           <strong>{statusCounts["Доступна"]}</strong>
@@ -544,7 +563,12 @@ export default function CameraCenter({
         </button>
         <button
           className="unavailable"
-          onClick={() => update({ status: "Недоступна" })}
+          aria-pressed={catalogue.status === "Недоступна"}
+          onClick={() =>
+            update({
+              status: catalogue.status === "Недоступна" ? "" : "Недоступна",
+            })
+          }
         >
           <i />
           <strong>{statusCounts["Недоступна"]}</strong>
@@ -552,65 +576,76 @@ export default function CameraCenter({
         </button>
         <button
           className="unknown"
-          onClick={() => update({ status: "Не проверена" })}
+          aria-pressed={catalogue.status === "Не проверена"}
+          onClick={() =>
+            update({
+              status: catalogue.status === "Не проверена" ? "" : "Не проверена",
+            })
+          }
         >
           <i />
           <strong>{statusCounts["Не проверена"]}</strong>
-          <span>не проверено</span>
+          <span>ожидают проверки</span>
         </button>
-        <div>
-          <CircleHelp size={14} />
-          <span>Статусы — по проверкам плеера в текущей сессии</span>
-        </div>
+        <button
+          className="cv-favorites-filter"
+          aria-pressed={catalogue.favorites}
+          onClick={() => update({ favorites: !catalogue.favorites })}
+        >
+          <Heart
+            size={14}
+            fill={catalogue.favorites ? "currentColor" : "none"}
+          />
+          <span>
+            Избранные ({cameras.filter((c) => favorites.includes(c.id)).length})
+          </span>
+        </button>
       </div>
       <div
-        className={`cv-catalogue-layout ${catalogue.view === "map" ? "map-only" : ""}`}
+        className={`cv-catalogue-layout ${catalogue.view === "map" ? "map-only" : "full-catalog"}`}
       >
         <section className="cv-results">
           <div className="cv-results-heading">
             <span>
-              <strong>{filtered.length}</strong>{" "}
-              {filtered.length === 1 ? "камера" : "камер"} по фильтрам
+              Найдено: <strong>{filtered.length}</strong>
             </span>
-            <div className="cv-view-switch" aria-label="Вид каталога">
-              {[
-                ["grid", "Сетка", Grid2X2],
-                ["list", "Список", List],
-                ["wall", "Видеостена", MonitorPlay],
-                ["map", "Карта", MapPin],
-              ].map(([id, name, Icon]) => {
-                const I = Icon as typeof Camera;
-                return (
-                  <button
-                    key={String(id)}
-                    aria-label={String(name)}
-                    title={String(name)}
-                    aria-pressed={catalogue.view === id}
-                    onClick={() =>
-                      update({ view: String(id), page: catalogue.page })
-                    }
-                  >
-                    <I size={16} />
-                  </button>
-                );
-              })}
+            <div className="cv-toolbar-right">
+              <label className="cv-sort-inline">
+                <select
+                  aria-label="Сортировка камер"
+                  value={catalogue.sort}
+                  onChange={(e) => update({ sort: e.target.value })}
+                >
+                  <option value="city">Сначала Алматы</option>
+                  <option value="name">По названию</option>
+                  <option value="district">По району</option>
+                  <option value="status">По статусу</option>
+                </select>
+              </label>
+              <div className="cv-view-switch" aria-label="Вид каталога">
+                {[
+                  ["grid", "Сетка", Grid2X2],
+                  ["list", "Список", List],
+                  ["wall", "Видеостена", MonitorPlay],
+                  ["map", "Карта", MapPin],
+                ].map(([id, name, Icon]) => {
+                  const I = Icon as typeof Camera;
+                  return (
+                    <button
+                      key={String(id)}
+                      aria-label={String(name)}
+                      title={String(name)}
+                      aria-pressed={catalogue.view === id}
+                      onClick={() =>
+                        update({ view: String(id), page: catalogue.page })
+                      }
+                    >
+                      <I size={15} />
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-          <div className="cv-sort-row">
-            <span>Результаты реального каталога</span>
-            <label>
-              Сортировка{" "}
-              <select
-                aria-label="Сортировка камер"
-                value={catalogue.sort}
-                onChange={(e) => update({ sort: e.target.value })}
-              >
-                <option value="city">Алматы и область, затем другие города</option>
-                <option value="name">По названию</option>
-                <option value="district">По району</option>
-                <option value="status">По доступности</option>
-              </select>
-            </label>
           </div>
           {catalogue.view === "wall" && (
             <div className="cv-wall-intro">
@@ -750,80 +785,76 @@ export default function CameraCenter({
                 </button>
               </div>
             )}
-            <span>Потоки запускаются по запросу</span>
+            <span>{mapped} с координатами на карте</span>
           </div>
         </section>
-        <aside className="cv-map-panel">
-          <div className="cv-panel-header">
-            <h3>
-              <MapPin size={17} />
-              Карта камер
-            </h3>
-            <button
-              aria-label={
-                catalogue.view === "map"
-                  ? "Вернуться к сетке камер"
-                  : "Развернуть карту камер"
-              }
-              onClick={() =>
-                update({ view: catalogue.view === "map" ? "grid" : "map" })
-              }
-            >
-              <Maximize2 size={15} />
-            </button>
-          </div>
-          <OperationsMap
-            cameras={filtered.map((c) => ({ ...c, ...checked(c) }))}
-            events={[]}
-            compact
-            district={catalogue.district}
-            onCameraSelect={open}
-          />
-          <div className="cv-map-legend">
-            <span>
-              <i className="available" />
-              Доступна
-            </span>
-            <span>
-              <i className="unavailable" />
-              Недоступна
-            </span>
-            <span>
-              <i className="unknown" />
-              Не проверена
-            </span>
-          </div>
-          <button
-            className="cv-coordinate-disclosure"
-            onClick={() => setCoordinateList((v) => !v)}
-            aria-expanded={coordinateList}
-          >
-            <CircleHelp size={15} />
-            <span>
-              {mapped} из {filtered.length} с опубликованными координатами
-            </span>
-            <ChevronRight size={14} />
-          </button>
-          {coordinateList && (
-            <div className="cv-coordinate-explanation">
-              <p>
-                На карте используются опубликованные источником координаты с атрибуцией в паспорте камеры. Для остальных камер положение не выдумывается; общий ориентир курорта не заменяет место установки.
-              </p>
-              {filtered
-                .filter((c) => c.latitude === null || c.longitude === null)
-                .map((c) => (
-                  <button key={c.id} onClick={() => open(c)}>
-                    {c.name}
-                    <ArrowUpRight size={13} />
-                  </button>
-                ))}
+        {catalogue.view === "map" && (
+          <aside className="cv-map-panel">
+            <div className="cv-panel-header">
+              <h3>
+                <MapPin size={17} />
+                Карта камер
+              </h3>
+              <button
+                aria-label="Вернуться к сетке камер"
+                onClick={() => update({ view: "grid" })}
+              >
+                <Maximize2 size={15} />
+              </button>
             </div>
-          )}
-          <p className="cv-map-note">
-            Район в фильтре меняет и каталог, и карту. Точки с неподтверждённым
-            положением не добавляются.
-          </p>
-        </aside>
+            <OperationsMap
+              cameras={filtered.map((c) => ({ ...c, ...checked(c) }))}
+              events={[]}
+              compact
+              district={catalogue.district}
+              onCameraSelect={open}
+            />
+            <div className="cv-map-legend">
+              <span>
+                <i className="available" />
+                Доступна
+              </span>
+              <span>
+                <i className="unavailable" />
+                Недоступна
+              </span>
+              <span>
+                <i className="unknown" />
+                Не проверена
+              </span>
+            </div>
+            <button
+              className="cv-coordinate-disclosure"
+              onClick={() => setCoordinateList((v) => !v)}
+              aria-expanded={coordinateList}
+            >
+              <CircleHelp size={15} />
+              <span>
+                {mapped} из {filtered.length} с опубликованными координатами
+              </span>
+              <ChevronRight size={14} />
+            </button>
+            {coordinateList && (
+              <div className="cv-coordinate-explanation">
+                <p>
+                  На карте используются опубликованные источником координаты с атрибуцией в паспорте камеры. Для остальных камер положение не выдумывается; общий ориентир курорта не заменяет место установки.
+                </p>
+                {filtered
+                  .filter((c) => c.latitude === null || c.longitude === null)
+                  .map((c) => (
+                    <button key={c.id} onClick={() => open(c)}>
+                      {c.name}
+                      <ArrowUpRight size={13} />
+                    </button>
+                  ))}
+              </div>
+            )}
+            <p className="cv-map-note">
+              Район в фильтре меняет и каталог, и карту. Точки с неподтверждённым
+              положением не добавляются.
+            </p>
+          </aside>
+        )}
       </div>
       {catalogue.view === "wall" && (
         <section className="cv-wall-section">

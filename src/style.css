@@ -1,40 +1,73 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap");
 :root {
-  font-family: Manrope, Arial, sans-serif;
-  color: #e7edef;
-  background: #10171b;
+  --font-sans:
+    "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-display:
+    "Manrope Variable", Manrope, "Inter Variable", Inter, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--font-sans);
+  color: #e8eff5;
+  background: #09111b;
   font-synthesis: none;
-  font-size: 13px;
-  font-weight: 500;
-  --surface: #151e23;
-  --border: #293237;
-  --muted: #829097;
-  --green: #93e7be;
-  --orange: #f0a778;
-  --blue: #88bce5;
-  --purple: #bba0ec;
-  --cyan: #61d6de;
+  font-size: 13.5px;
+  font-weight: 480;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  --surface: #13202e;
+  --border: rgba(125, 175, 215, 0.16);
+  --muted: #93a8bc;
+  --green: #7ce2b3;
+  --orange: #f0ab7a;
+  --blue: #84beea;
+  --purple: #bba4ee;
+  --cyan: #57d6e4;
 }
 * {
   box-sizing: border-box;
 }
 body {
   margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 480;
+  color: #e8eff5;
+  background: #09111b;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 640;
+  letter-spacing: -0.02em;
 }
 button,
 input,
+select,
+textarea,
 a {
   -webkit-tap-highlight-color: transparent;
 }
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
+  font-weight: 500;
 }
 button {
   color: inherit;
   cursor: pointer;
   border: 0;
   background: none;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
 }
 button:disabled {
   opacity: 0.55;
@@ -55,19 +88,22 @@ a {
   text-decoration: none;
 }
 button:hover {
-  filter: brightness(1.15);
+  filter: brightness(1.08);
 }
 svg {
   flex-shrink: 0;
 }
 small {
-  font-size: 10px;
+  font-size: 12px;
+  font-weight: 500;
 }
-strong {
-  font-weight: 700;
+strong,
+b {
+  font-weight: 620;
 }
 p {
-  line-height: 1.7;
+  line-height: 1.62;
+  font-weight: 480;
 }
 .orange {
   color: var(--orange);

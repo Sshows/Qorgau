@@ -536,15 +536,16 @@
   min-height: 340px;
 }
 .q-map-working .q-map-header {
-  padding: 11px 14px;
-  background: #0e1f2e;
+  padding: 12px 16px;
+  background: rgba(14, 31, 46, 0.85);
 }
 .q-map-working .q-map-title strong {
-  font-size: 14px;
+  font-size: 14.5px;
+  font-weight: 620;
 }
 .q-map-working .q-map-title > span {
-  font-size: 10px;
-  color: #6e9bb1;
+  font-size: 12px;
+  color: #84adc3;
 }
 .q-map-navigation {
   display: flex;
@@ -553,26 +554,32 @@
 }
 .q-map-working .q-map-district-toggle {
   top: 141px;
+  backdrop-filter: blur(10px);
 }
 .q-map-working .q-map-districts {
   top: 179px;
   max-height: calc(100% - 235px);
   overflow: auto;
   scrollbar-width: thin;
+  backdrop-filter: blur(12px);
 }
 .q-map-working .q-map-legend {
   bottom: 31px;
   max-width: calc(100% - 74px);
   left: 12px;
-  font-size: 9px;
-  gap: 8px;
-  box-shadow: 0 3px 12px #0004;
+  font-size: 11.5px;
+  gap: 10px;
+  background: rgba(11, 28, 45, 0.82);
+  backdrop-filter: blur(10px);
+  border-radius: 9px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
 }
 .q-map-working .q-map-basemap {
-  background: #0a1b2ce8;
+  background: rgba(10, 27, 44, 0.84);
+  backdrop-filter: blur(10px);
 }
 .q-map-working .q-map-basemap button {
-  font-size: 10px;
+  font-size: 12px;
 }
 .q-map-working .q-map-top-controls {
   right: 12px;
@@ -581,9 +588,13 @@
 .q-map-working .q-map-side {
   min-width: 0;
   position: relative;
-  padding: 22px 18px;
-  background: linear-gradient(145deg, #112335, #0c1c2c);
-  border-left: 1px solid #294053;
+  padding: 20px 18px;
+  background: linear-gradient(
+    155deg,
+    rgba(19, 36, 54, 0.86),
+    rgba(12, 24, 38, 0.92)
+  );
+  border-left: 1px solid rgba(125, 178, 218, 0.16);
   overflow: auto;
   max-height: clamp(480px, 70vh, 820px);
   scrollbar-width: thin;
@@ -593,51 +604,52 @@
   font-size: 17px !important;
   line-height: 1.45 !important;
   margin: 12px 20px 13px 0 !important;
-  color: #deedf5;
+  color: #e4f1f9;
 }
 .q-map-side h4 {
-  font-size: 11px;
-  margin: 23px 0 8px;
-  color: #8cb6ca;
-  font-weight: 550;
+  font-size: 13px;
+  margin: 20px 0 8px;
+  color: #9dc2d6;
+  font-weight: 580;
 }
 .q-map-side h4 > span {
-  margin-left: 5px;
-  font-size: 10px;
-  border: 1px solid #2a5066;
-  border-radius: 3px;
-  padding: 1px 5px;
+  margin-left: 6px;
+  font-size: 11.5px;
+  border: 1px solid rgba(125, 178, 218, 0.25);
+  border-radius: 5px;
+  padding: 1px 6px;
 }
 .q-map-side > p {
-  font-size: 11px;
-  line-height: 1.8;
-  color: #87a4b8;
-  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #9ab3c7;
+  margin: 0 0 14px;
   overflow-wrap: anywhere;
 }
 .q-map-side > small {
   display: block;
-  color: #7494aa;
-  font-size: 10px;
-  line-height: 1.7;
+  color: #88a4ba;
+  font-size: 12px;
+  line-height: 1.6;
 }
 .q-map-side dl {
   display: grid;
   grid-template-columns: 1fr;
   gap: 5px;
-  margin: 18px 0 22px;
+  margin: 16px 0 20px;
 }
 .q-map-side dt {
-  font-size: 9px;
-  color: #5c869f;
+  font-size: 11px;
+  font-weight: 560;
+  color: #749cb5;
   margin: 8px 0 0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 .q-map-side dd {
-  font-size: 11px;
-  line-height: 1.6;
-  color: #b5d0e0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #c6dceb;
   margin: 0;
   overflow-wrap: anywhere;
 }
@@ -654,53 +666,55 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 11px;
-  border: 1px solid #254d62;
-  border-radius: 5px;
-  padding: 10px;
-  color: #60c6e0;
+  font-size: 12.5px;
+  border: 1px solid rgba(90, 180, 215, 0.3);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #6bd0ea;
   margin-top: 14px;
   text-decoration: none;
   line-height: 1.5;
 }
 .q-map-working .q-map-side .q-map-open {
-  font-size: 11px;
+  font-size: 12.5px;
   line-height: 1.5;
-  padding: 11px 10px;
+  padding: 11px 12px;
+  border-radius: 8px;
 }
 .q-map-verification {
-  background: #153747;
-  border: 1px solid #295669;
-  border-radius: 5px;
-  padding: 9px 10px;
-  font-size: 10px;
-  line-height: 1.65;
-  color: #86c5d5;
+  background: rgba(21, 55, 71, 0.72);
+  border: 1px solid rgba(72, 145, 175, 0.35);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #9ad1e0;
 }
 .q-map-verification.archive {
-  color: #d0b37a;
-  background: #40372244;
-  border-color: #67593666;
+  color: #dec28a;
+  background: rgba(64, 55, 34, 0.45);
+  border-color: rgba(155, 132, 82, 0.45);
 }
 .q-map-counts {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  padding: 14px 0 18px;
-  border-bottom: 1px solid #254052;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid rgba(125, 178, 218, 0.14);
   margin-bottom: 8px;
 }
 .q-map-counts > span {
-  font-size: 9px;
-  color: #6a99b1;
+  font-size: 12px;
+  color: #8ab0c6;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 .q-map-counts strong {
+  font-family: var(--font-display);
   font-size: 24px;
-  color: #37c2df;
-  font-weight: 550;
+  color: #4bd0ec;
+  font-weight: 640;
 }
 .q-map-working .q-map-record {
   display: flex;
@@ -709,12 +723,12 @@
   align-items: center;
   text-align: left;
   border: 0;
-  border-bottom: 1px solid #233b4e;
+  border-bottom: 1px solid rgba(125, 178, 218, 0.12);
   background: none;
-  color: #b0cedf;
-  padding: 12px 0;
-  font-size: 11px;
-  line-height: 1.5;
+  color: #c2daea;
+  padding: 11px 0;
+  font-size: 13px;
+  line-height: 1.48;
 }
 .q-map-record > span {
   flex: 1;
@@ -722,33 +736,33 @@
 }
 .q-map-record small {
   display: block !important;
-  font-size: 9px;
-  color: #5d8aa3;
-  margin-top: 4px;
+  font-size: 11.5px;
+  color: #7ea3bc;
+  margin-top: 3px;
 }
 .q-map-record > svg {
-  color: #4487a4;
+  color: #5496b3;
   flex-shrink: 0;
 }
 .q-map-working .q-map-record:hover {
-  color: #3ad0ec;
+  color: #52daf4;
 }
 .q-map-no-events {
   padding: 16px 0;
-  color: #638ba1;
-  font-size: 11px;
-  line-height: 1.8;
+  color: #7ea3bc;
+  font-size: 12.5px;
+  line-height: 1.65;
 }
 .q-map-data-controls {
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 9px 14px;
-  border-top: 1px solid #243e50;
-  background: #0d1c2b;
-  color: #719ab2;
-  font-size: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(125, 178, 218, 0.14);
+  background: rgba(13, 28, 43, 0.85);
+  color: #8bb0c7;
+  font-size: 12px;
 }
 .q-map-data-controls > label {
   display: flex;
@@ -756,22 +770,22 @@
   gap: 8px;
 }
 .q-map-data-controls select {
-  background: #112d41;
-  color: #b2d0df;
-  border: 1px solid #244c62;
-  border-radius: 4px;
-  font-size: 10px;
-  padding: 6px;
+  background: rgba(17, 45, 65, 0.88);
+  color: #c8e0ee;
+  border: 1px solid rgba(125, 178, 218, 0.24);
+  border-radius: 7px;
+  font-size: 12.5px;
+  padding: 6px 9px;
   max-width: 220px;
 }
 .q-map-data-controls > span {
   margin-left: auto;
-  font-size: 9px;
-  color: #587f98;
+  font-size: 11.5px;
+  color: #759ab2;
 }
 .q-map-data-controls .q-map-archive {
-  font-size: 10px;
-  color: #759eb4;
+  font-size: 12px;
+  color: #8eb3c9;
 }
 .q-map-archive input {
   accent-color: #1ac6e0;
@@ -782,38 +796,38 @@
   bottom: 87px;
   left: 12px;
   max-width: calc(100% - 72px);
-  background: #0a1a28dd;
-  border: 1px solid #2b4a5b;
-  color: #96b9c9;
-  border-radius: 5px;
-  padding: 9px 10px;
-  font-size: 10px;
+  background: rgba(10, 26, 40, 0.84);
+  border: 1px solid rgba(125, 178, 218, 0.24);
+  color: #b0cde0;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 12px;
   line-height: 1.5;
   pointer-events: none;
   z-index: 3;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(8px);
 }
 .q-map-empty-dot {
   display: inline-block;
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   background: #50b4bf;
   border-radius: 50%;
   margin-right: 7px;
   vertical-align: middle;
 }
 .q-map-working .map-credits {
-  font-size: 8px !important;
+  font-size: 10px !important;
   bottom: 5px !important;
   left: 10px !important;
   max-width: calc(100% - 20px) !important;
 }
 .q-map-real .q-map-foot {
-  font-size: 9px;
-  background: #0a1824;
+  font-size: 11.5px;
+  background: rgba(10, 24, 36, 0.9);
 }
 .q-map-real .q-map-foot > span:last-child {
-  color: #4e7a92;
+  color: #6c96b0;
 }
 @media (min-width: 1700px) {
   .q-map-working .q-map-display {

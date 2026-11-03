@@ -91,10 +91,14 @@ function HlsCameraPlayer({
     const requestPlay = () => {
       if (!active()) return;
       void video.play().catch(() => {
-        update(
-          "ready",
-          "Трансляция подключена. Нажмите ▶ в плеере, чтобы начать просмотр.",
-        );
+        if (!active()) return;
+        video.muted = true;
+        void video.play().catch(() => {
+          update(
+            "ready",
+            "Трансляция подключена. Нажмите ▶ в плеере, чтобы начать просмотр.",
+          );
+        });
       });
     };
 
@@ -135,9 +139,12 @@ function HlsCameraPlayer({
         // The ESM package does not bundle a worker. Keep the player entirely
         // local rather than introducing an additional external worker URL.
         hls = new HlsPlayer({
-          enableWorker: false,
-          maxBufferLength: 12,
-          backBufferLength: 0,
+          enableWorker: true,
+          lowLatencyMode: false,
+          capLevelToPlayerSize: true,
+          maxBufferLength: 10,
+          maxMaxBufferLength: 20,
+          backBufferLength: 4,
           // Some public feeds publish ~34-second fragments. Keep a bounded
           // loading window without confusing HTTP success with playback.
           fragLoadPolicy: {

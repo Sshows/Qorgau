@@ -199,11 +199,19 @@ export default async function handler(
         timezone: "Asia/Almaty",
       });
     if (path === "public-data" && method === "GET") {
+      const snapshot = await getPublicData();
+      const etag = `W/"${snapshot.generatedAt}"`;
+      res.setHeader("ETag", etag);
       res.setHeader(
         "Cache-Control",
-        "public, max-age=0, s-maxage=300, stale-while-revalidate=60",
+        "public, max-age=30, s-maxage=300, stale-while-revalidate=300",
       );
-      return send(res, 200, await getPublicData());
+      if (req.headers["if-none-match"] === etag) {
+        res.statusCode = 304;
+        res.end();
+        return;
+      }
+      return send(res, 200, snapshot);
     }
     if (path === "public-ai" && method === "POST") {
       if (!publicAiConfigured())

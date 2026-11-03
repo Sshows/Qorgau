@@ -49,15 +49,14 @@ const navigation = [
   ["settings", "Источники и настройки", Settings],
 ] as const;
 const subtitles: Record<string, string> = {
-  overview: "Публичная ситуационная картина · Алматы и Казахстан",
-  map: "Реальная география · только известные координаты",
-  events:
-    "Сообщения источников · публикация не означает действующее происшествие",
-  cameras: "Публичные трансляции и открытые страницы владельцев",
-  analytics: "Показатели рассчитаны из полученного снимка",
-  reports: "Экспорт публикаций с первоисточниками и временем проверки",
-  ai: "Сводки по реальным данным подключённых источников",
-  settings: "Доступность, обновление и ограничения каждого источника",
+  overview: "Сводка открытых источников по Алматы и Казахстану",
+  map: "Интерактивная карта событий и камер с координатами",
+  events: "Лента официальных публикаций и сообщений служб",
+  cameras: "Публичные видеопотоки и обновляемые кадры",
+  analytics: "Статистика по текущему снимку источников",
+  reports: "Выгрузка публикаций в CSV и JSON",
+  ai: "Анализ обстановки по данным открытых источников",
+  settings: "Статус подключения и расписание обновления",
 };
 export default function LiveWorkspace({ onDemo }: { onDemo: () => void }) {
   const { snapshot, busy, error, ai, refresh } = useLiveData();
@@ -133,21 +132,22 @@ export default function LiveWorkspace({ onDemo }: { onDemo: () => void }) {
     Number.isFinite(longitude)
       ? { latitude, longitude }
       : undefined;
-  const map = (
-    <OperationsMap
-      compact={page === "overview"}
-      events={[]}
-      liveEvents={snapshot.events}
-      cameras={verifiedCameraCatalog}
-      workingMode="real"
-      district={district}
-      onDistrictChange={setDistrict}
-      onLiveEventSelect={setDetail}
-      onCameraSelect={openCamera}
-      selectedCameraId={route.params.get("camera") ?? undefined}
-      focusPoint={focus}
-    />
-  );
+  const map =
+    page === "overview" || page === "map" ? (
+      <OperationsMap
+        compact={page === "overview"}
+        events={[]}
+        liveEvents={snapshot.events}
+        cameras={verifiedCameraCatalog}
+        workingMode="real"
+        district={district}
+        onDistrictChange={setDistrict}
+        onLiveEventSelect={setDetail}
+        onCameraSelect={openCamera}
+        selectedCameraId={route.params.get("camera") ?? undefined}
+        focusPoint={focus}
+      />
+    ) : null;
   const pageNo = Math.min(
     eventPage,
     Math.max(0, Math.ceil(filtered.length / 20) - 1),
@@ -245,9 +245,7 @@ export default function LiveWorkspace({ onDemo }: { onDemo: () => void }) {
         <div className="live-content">
           <div className="live-page-heading">
             <div>
-              <span className="live-eyebrow">
-                QORGAU / {page.toUpperCase()}
-              </span>
+              <span className="live-eyebrow">Ситуационный центр · Алматы</span>
               <h1>{navigation.find((n) => n[0] === page)?.[1]}</h1>
               <p>{subtitles[page]}</p>
             </div>
@@ -274,8 +272,7 @@ export default function LiveWorkspace({ onDemo }: { onDemo: () => void }) {
           {busy && !snapshot.generatedAt && (
             <div className="live-loading" role="status">
               <RefreshCw size={15} className="live-spin" />
-              Проверяем публичные источники. Карта и каталог доступны во время
-              загрузки.
+              Загружаем сводку открытых источников…
             </div>
           )}
           {page === "overview" && (
@@ -289,40 +286,44 @@ export default function LiveWorkspace({ onDemo }: { onDemo: () => void }) {
                 >
                   <TriangleAlert size={17} />
                   <span>
-                    <small>Свежие сообщения · 72 ч</small>
+                    <small>Свежие за 72 ч</small>
                     <strong>
                       {recent.length}
-                      <em>из {snapshot.events.length} публикаций</em>
+                      <em>из {snapshot.events.length}</em>
                     </strong>
                   </span>
                 </button>
                 <button onClick={() => go("cameras")}>
                   <Camera size={17} />
                   <span>
-                    <small>Реальные источники камер</small>
+                    <small>Камеры в каталоге</small>
                     <strong>
                       {verifiedCameraCatalog.length}
-                      <em>{playing} воспроизведено в сеансе</em>
+                      <em>
+                        {playing
+                          ? `${playing} проверено`
+                          : "прямые потоки и кадры"}
+                      </em>
                     </strong>
                   </span>
                 </button>
                 <button onClick={() => go("settings")}>
                   <Database size={17} />
                   <span>
-                    <small>Ответили при обновлении</small>
+                    <small>Источники онлайн</small>
                     <strong>
                       {sourcesOk}
-                      <em>из {snapshot.sources.length} источников</em>
+                      <em>из {snapshot.sources.length} активны</em>
                     </strong>
                   </span>
                 </button>
                 <button onClick={() => go("map")}>
                   <MapPin size={17} />
                   <span>
-                    <small>События с координатами</small>
+                    <small>Точки на карте</small>
                     <strong>
                       {located.length}
-                      <em>без придуманной геолокации</em>
+                      <em>с координатами</em>
                     </strong>
                   </span>
                 </button>
@@ -350,8 +351,7 @@ export default function LiveWorkspace({ onDemo }: { onDemo: () => void }) {
                     </button>
                   </div>
                   <p className="live-feed-note">
-                    Официальное сообщение подтверждает публикацию. Текущий
-                    статус происшествия может быть неизвестен.
+                    Официальные публикации и сигналы экстренных служб.
                   </p>
                   {snapshot.events.length ? (
                     snapshot.events
@@ -734,6 +734,12 @@ function EventCard({
   onSelect: () => void;
   expanded?: boolean;
 }) {
+  const titlePrefix = e.title.replace(/…$/, "").trim();
+  const extraDescription = e.description.startsWith(titlePrefix)
+    ? e.description.slice(titlePrefix.length).trim()
+    : e.description !== e.title
+      ? e.description
+      : "";
   return (
     <article className={`live-event-card ${expanded ? "expanded" : ""}`}>
       <button className="live-event-title" onClick={onSelect}>
@@ -748,31 +754,29 @@ function EventCard({
         </div>
         <ChevronRight size={14} />
       </button>
-      {expanded && (
+      {expanded && extraDescription.length > 12 && (
         <p>
-          {e.description.slice(0, 220)}
-          {e.description.length > 220 ? "…" : ""}
+          {extraDescription.slice(0, 200)}
+          {extraDescription.length > 200 ? "…" : ""}
         </p>
       )}
       <div className="live-event-meta">
-        <Clock3 size={11} />
+        <Clock3 size={12} />
         <span>
           {liveEventDate(e)
             ? displayTime(liveEventDate(e)!)
             : "Дата не указана"}
         </span>
         <span className={e.status === "recent" ? "recent" : ""}>
-          {e.status === "recent" ? "≤72 ч" : "Архив / без даты"}
+          {e.status === "recent" ? "≤72 ч" : "Архив"}
         </span>
       </div>
       <div className="live-event-source">
         <a href={e.url} target="_blank" rel="noreferrer">
           {e.sourceName}
-          <ArrowUpRight size={11} />
+          <ArrowUpRight size={12} />
         </a>
-        <small>
-          {eventHasCoordinates(e) ? "Есть координаты" : "Без координат"}
-        </small>
+        {eventHasCoordinates(e) && <small>На карте</small>}
       </div>
     </article>
   );
