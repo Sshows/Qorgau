@@ -1,6 +1,6 @@
-import { districts, incidents } from "./data";
-import type { MapObject } from "./data";
-import { publicCameraSources } from "./publicSources";
+import { districts, incidents } from "./data.js";
+import type { MapObject } from "./data.js";
+import { publicCameraSources } from "./publicSources.js";
 
 export const categories = [
   "ДТП",

@@ -5,8 +5,8 @@ import {
   filterEvents,
   emptyFilters,
   counts,
-} from "../src/operations";
-import type { EventRecord, Filters, Role } from "../src/operations";
+} from "../src/operations.js";
+import type { EventRecord, Filters, Role } from "../src/operations.js";
 
 export class HttpError extends Error {
   constructor(
