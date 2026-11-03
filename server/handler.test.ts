@@ -12,10 +12,12 @@ test("HTTP API: configuration, sessions, CSRF, validation, forbidden writes, opt
   const originalFetch = globalThis.fetch;
   const oldUrl = process.env.SUPABASE_URL,
     oldKey = process.env.SUPABASE_ANON_KEY,
-    oldAi = process.env.AI_ENABLED;
+    oldAi = process.env.AI_ENABLED,
+    oldOpenAiKey = process.env.OPENAI_API_KEY;
   delete process.env.SUPABASE_URL;
   delete process.env.SUPABASE_ANON_KEY;
   delete process.env.AI_ENABLED;
+  delete process.env.OPENAI_API_KEY;
   const server = createServer((req, res) => void handler(req, res));
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
@@ -42,6 +44,28 @@ test("HTTP API: configuration, sessions, CSRF, validation, forbidden writes, opt
   try {
     assert.equal((await (await request("health")).json()).configured, false);
     assert.equal((await request("events")).status, 401);
+    assert.equal(
+      (
+        await request("public-ai", "POST", {
+          messages: [{ role: "user", content: "Сводка" }],
+        })
+      ).status,
+      503,
+    );
+    process.env.OPENAI_API_KEY = "test-only-no-provider-call";
+    const largeInvalidHistory = Array.from({ length: 12 }, () => ({
+      role: "assistant",
+      content: "Д".repeat(2000),
+    }));
+    const invalidChat = await request("public-ai", "POST", {
+      messages: largeInvalidHistory,
+    });
+    assert.equal(
+      invalidChat.status,
+      400,
+      "valid size Cyrillic history reaches chat validation rather than 16KB body rejection",
+    );
+    delete process.env.OPENAI_API_KEY;
     assert.equal(
       (
         await request(
@@ -131,6 +155,7 @@ test("HTTP API: configuration, sessions, CSRF, validation, forbidden writes, opt
       SUPABASE_URL: oldUrl,
       SUPABASE_ANON_KEY: oldKey,
       AI_ENABLED: oldAi,
+      OPENAI_API_KEY: oldOpenAiKey,
     })) {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;

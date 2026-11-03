@@ -1,0 +1,999 @@
+{
+  "checkedAt": "2026-11-03T15:19:38.372Z",
+  "note": "Transport checks are not browser playback checks. No credentials, tokens or downloaded media are included.",
+  "hls": [
+    {
+      "url": "https://cam.xcom.kz:8081/19-1/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:47.552Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "727394",
+      "programDateTime": "2026-11-03T15:23:14.642Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/4abrease/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:47.635Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "727394",
+      "programDateTime": "2026-11-03T15:23:12.424Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/28ring/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:47.637Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "583010",
+      "programDateTime": "2026-11-03T15:23:17.137Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/amfiteatr15b/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:47.639Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "582738",
+      "programDateTime": "2026-11-03T15:23:17.548Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/13-1/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:48.492Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "492518",
+      "programDateTime": "2026-11-03T15:22:13.358Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/caspy14/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:48.496Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "583029",
+      "programDateTime": "2026-11-03T15:23:16.536Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/9ring/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:48.498Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "727396",
+      "programDateTime": "2026-11-03T15:23:27.319Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/yntymak/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:48.500Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "611021",
+      "programDateTime": "2026-11-03T15:23:18.072Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/amfiteatr15a/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:48.827Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "582604",
+      "programDateTime": "2026-11-03T15:23:19.654Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/12-55/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:49.132Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "727395",
+      "programDateTime": "2026-11-03T15:23:15.713Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/11ring/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:49.241Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "727395",
+      "programDateTime": "2026-11-03T15:23:18.171Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/amfiteatr15c/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:49.244Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "582736",
+      "programDateTime": "2026-11-03T15:23:19.658Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/amfiteatr15-10/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:49.245Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "582739",
+      "programDateTime": "2026-11-03T15:23:22.003Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/caspy1/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:49.599Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "582954",
+      "programDateTime": "2026-11-03T15:23:20.267Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/dramteatr/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:49.690Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "582993",
+      "programDateTime": "2026-11-03T15:23:17.578Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/caspy15/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:49.691Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "727397",
+      "programDateTime": "2026-11-03T15:23:29.246Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/rockypath/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:49.801Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "581812",
+      "programDateTime": "2026-11-03T15:23:18.440Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://ipcam.kz:443/cam1/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:49.993Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "334086",
+      "programDateTime": "2026-11-03T15:23:21.776Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://ipcam.kz:443/cam5/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:50.129Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "371975",
+      "programDateTime": "2026-11-03T15:23:28.855Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    },
+    {
+      "url": "https://ipcam.kz:443/cam6/index.m3u8",
+      "checkedAt": "2026-11-03T15:23:50.131Z",
+      "manifestStatus": 200,
+      "cors": "*",
+      "variantStatus": 200,
+      "mediaSequence": "368230",
+      "programDateTime": "2026-11-03T15:23:30.660Z",
+      "segmentStatus": 206,
+      "segmentContentType": "video/MP2T",
+      "segmentBytesObserved": 1024,
+      "mpegTsSyncByte": true
+    }
+  ],
+  "snapshots": [
+    {
+      "url": "https://imgproxy.windy.com/_/full/plain/current/1793908561/original.jpg",
+      "status": 200,
+      "type": "image/jpeg",
+      "bytes": 136469,
+      "checkedAt": "2026-11-03T15:16:39.204Z",
+      "metadataUrl": "https://node.windy.com/webcams/v2.0/detail/1793908561?imageSize=full&lang=en",
+      "metadataCheckedAt": "2026-11-03T15:19:38.372Z",
+      "latitude": 43.22847,
+      "longitude": 77.16424,
+      "ownerPage": "https://oiqaragai.com/en/live",
+      "reportedUpdateAt": "2026-11-03T15:15:23.000Z"
+    },
+    {
+      "url": "https://images-webcams.windy.com/36/1610682136/current/preview/1610682136.jpg",
+      "status": 200,
+      "type": "image/jpeg",
+      "bytes": 16028,
+      "checkedAt": "2026-11-03T15:16:38.271Z",
+      "metadataUrl": "https://node.windy.com/webcams/v2.0/detail/1610682136?imageSize=full&lang=en",
+      "metadataCheckedAt": "2026-11-03T15:19:38.372Z",
+      "latitude": 49.9415,
+      "longitude": 83.01117,
+      "ownerPage": "https://alps.altay.kz/web-cameras/?view=2bkd",
+      "reportedUpdateAt": "2026-11-03T15:14:44.000Z"
+    },
+    {
+      "url": "https://imgproxy.windy.com/_/full/plain/current/1793901499/original.jpg",
+      "status": 200,
+      "type": "image/jpeg",
+      "bytes": 44019,
+      "checkedAt": "2026-11-03T15:16:38.958Z",
+      "metadataUrl": "https://node.windy.com/webcams/v2.0/detail/1793901499?imageSize=full&lang=en",
+      "metadataCheckedAt": "2026-11-03T15:19:38.372Z",
+      "latitude": 49.79047,
+      "longitude": 73.10105,
+      "ownerPage": "https://flussonic.fish-net.kz/Cam_Buharjiray82_most/preview.jpg",
+      "reportedUpdateAt": "2026-11-03T15:17:31.000Z"
+    },
+    {
+      "url": "https://imgproxy.windy.com/_/full/plain/current/1793901614/original.jpg",
+      "status": 200,
+      "type": "image/png",
+      "bytes": 812547,
+      "checkedAt": "2026-11-03T15:16:40.652Z",
+      "metadataUrl": "https://node.windy.com/webcams/v2.0/detail/1793901614?imageSize=full&lang=en",
+      "metadataCheckedAt": "2026-11-03T15:19:38.372Z",
+      "latitude": 50.40503,
+      "longitude": 80.24918,
+      "ownerPage": "https://gorset.kz/ru/",
+      "reportedUpdateAt": "2026-11-03T15:04:51.000Z"
+    },
+    {
+      "url": "https://imgproxy.windy.com/_/full/plain/current/1793905435/original.jpg",
+      "status": 200,
+      "type": "image/jpeg",
+      "bytes": 376734,
+      "checkedAt": "2026-11-03T15:16:40.770Z",
+      "metadataUrl": "https://node.windy.com/webcams/v2.0/detail/1793905435?imageSize=full&lang=en",
+      "metadataCheckedAt": "2026-11-03T15:19:38.372Z",
+      "latitude": 43.22573,
+      "longitude": 76.94455,
+      "ownerPage": "https://bi.group/ru/live/9931",
+      "reportedUpdateAt": "2026-11-03T15:14:38.000Z"
+    },
+    {
+      "url": "https://imgproxy.windy.com/_/full/plain/current/1793908077/original.jpg",
+      "status": 200,
+      "type": "image/jpeg",
+      "bytes": 91934,
+      "checkedAt": "2026-11-03T15:16:38.959Z",
+      "metadataUrl": "https://node.windy.com/webcams/v2.0/detail/1793908077?imageSize=full&lang=en",
+      "metadataCheckedAt": "2026-11-03T15:19:38.372Z",
+      "latitude": 43.22685,
+      "longitude": 77.14911,
+      "ownerPage": "https://oq.mimishki.kz/en/live",
+      "reportedUpdateAt": "2026-11-03T15:09:51.000Z"
+    },
+    {
+      "url": "https://imgproxy.windy.com/_/full/plain/current/1793908563/original.jpg",
+      "status": 200,
+      "type": "image/jpeg",
+      "bytes": 38903,
+      "checkedAt": "2026-11-03T15:16:38.630Z",
+      "metadataUrl": "https://node.windy.com/webcams/v2.0/detail/1793908563?imageSize=full&lang=en",
+      "metadataCheckedAt": "2026-11-03T15:19:38.372Z",
+      "latitude": 43.22961,
+      "longitude": 77.13509,
+      "ownerPage": "https://oiqaragai.com/en/live",
+      "reportedUpdateAt": "2026-11-03T15:14:15.000Z"
+    }
+  ],
+  "excluded": [
+    {
+      "url": "https://s173.ipcamlive.com/streams/adthvf6i5watr07de/stream.m3u8",
+      "httpStatus": 404,
+      "reason": "Old dynamic Oi-Qaragai HLS URL was unavailable; no working video is claimed."
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=MmlDKqnfEpY",
+      "reason": "Browser QA: YouTube explicitly reported the recording of the stream is unavailable. Excluded from usable camera catalogue."
+    }
+  ],
+  "foundSources": 28,
+  "retainedCatalogueSources": 27,
+  "codecInspection": [
+    {
+      "url": "https://cam.xcom.kz:8081/amfiteatr15b/index.m3u8",
+      "checkedAt": "2026-11-03T15:31:49.283Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        6.299,
+        6.299,
+        6.298,
+        6.299
+      ],
+      "streams": [
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        },
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 64,
+        "level": 50,
+        "codec": "avc1.4d4032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/19-1/index.m3u8",
+      "checkedAt": "2026-11-03T15:31:49.229Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        7.498,
+        7.499,
+        7.498,
+        7.499
+      ],
+      "streams": [
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        },
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 0,
+        "level": 50,
+        "codec": "avc1.4d0032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/4abrease/index.m3u8",
+      "checkedAt": "2026-11-03T15:31:49.281Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        7.998,
+        7.998,
+        7.999,
+        7.998
+      ],
+      "streams": [
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        },
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 0,
+        "level": 50,
+        "codec": "avc1.4d0032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/28ring/index.m3u8",
+      "checkedAt": "2026-11-03T15:31:49.282Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        6.299,
+        6.298,
+        6.299,
+        6.299
+      ],
+      "streams": [
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        },
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 64,
+        "level": 50,
+        "codec": "avc1.4d4032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/9ring/index.m3u8",
+      "checkedAt": "2026-11-03T15:31:55.563Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        5,
+        5.001,
+        5,
+        5
+      ],
+      "streams": [
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        },
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 0,
+        "level": 50,
+        "codec": "avc1.4d0032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/yntymak/index.m3u8",
+      "checkedAt": "2026-11-03T15:31:55.634Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        6,
+        6,
+        6,
+        5.99
+      ],
+      "streams": [
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        },
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 64,
+        "level": 40,
+        "codec": "avc1.4d4028"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/caspy14/index.m3u8",
+      "checkedAt": "2026-11-03T15:31:55.282Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        6.299,
+        6.298,
+        6.299,
+        6.299
+      ],
+      "streams": [
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        },
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 64,
+        "level": 50,
+        "codec": "avc1.4d4032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/13-1/index.m3u8",
+      "checkedAt": "2026-11-03T15:31:55.216Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        33.963,
+        33.57,
+        33.9,
+        33.549
+      ],
+      "streams": [
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        },
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 0,
+        "level": 50,
+        "codec": "avc1.4d0032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/amfiteatr15a/index.m3u8",
+      "checkedAt": "2026-11-03T15:31:59.653Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        6.3,
+        6.3,
+        6.301,
+        6.3
+      ],
+      "streams": [
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        },
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 64,
+        "level": 50,
+        "codec": "avc1.4d4032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/11ring/index.m3u8",
+      "checkedAt": "2026-11-03T15:32:00.743Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        7.498,
+        7.499,
+        7.498,
+        7.499
+      ],
+      "streams": [
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        },
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 0,
+        "level": 50,
+        "codec": "avc1.4d0032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/12-55/index.m3u8",
+      "checkedAt": "2026-11-03T15:31:59.869Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        7.498,
+        7.499,
+        7.498,
+        7.499
+      ],
+      "streams": [
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        },
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 0,
+        "level": 50,
+        "codec": "avc1.4d0032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/amfiteatr15c/index.m3u8",
+      "checkedAt": "2026-11-03T15:32:02.014Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        6.298,
+        6.299,
+        6.299,
+        6.299
+      ],
+      "streams": [
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        },
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 64,
+        "level": 50,
+        "codec": "avc1.4d4032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/caspy1/index.m3u8",
+      "checkedAt": "2026-11-03T15:32:04.056Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        6.299,
+        6.298,
+        6.299,
+        6.299
+      ],
+      "streams": [
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        },
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 64,
+        "level": 50,
+        "codec": "avc1.4d4032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/dramteatr/index.m3u8",
+      "checkedAt": "2026-11-03T15:32:04.193Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        6.298,
+        6.299,
+        6.299,
+        6.298
+      ],
+      "streams": [
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        },
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 64,
+        "level": 50,
+        "codec": "avc1.4d4032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/amfiteatr15-10/index.m3u8",
+      "checkedAt": "2026-11-03T15:32:03.439Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        6.299,
+        6.299,
+        6.298,
+        6.299
+      ],
+      "streams": [
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        },
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 64,
+        "level": 50,
+        "codec": "avc1.4d4032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/caspy15/index.m3u8",
+      "checkedAt": "2026-11-03T15:32:05.043Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        5,
+        5.001,
+        5.001,
+        5
+      ],
+      "streams": [
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        },
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 0,
+        "level": 50,
+        "codec": "avc1.4d0032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://cam.xcom.kz:8081/rockypath/index.m3u8",
+      "checkedAt": "2026-11-03T15:32:07.235Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        6.298,
+        6.299,
+        6.299,
+        6.298
+      ],
+      "streams": [
+        {
+          "pid": 221,
+          "type": "0xf",
+          "format": "AAC"
+        },
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 64,
+        "level": 50,
+        "codec": "avc1.4d4032"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://ipcam.kz:443/cam5/index.m3u8",
+      "checkedAt": "2026-11-03T15:32:08.232Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        5,
+        5,
+        5,
+        5
+      ],
+      "streams": [
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 100,
+        "constraints": 0,
+        "level": 31,
+        "codec": "avc1.64001f"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://ipcam.kz:443/cam1/index.m3u8",
+      "checkedAt": "2026-11-03T15:32:07.432Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "streams": [
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 100,
+        "constraints": 0,
+        "level": 31,
+        "codec": "avc1.64001f"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    },
+    {
+      "url": "https://ipcam.kz:443/cam6/index.m3u8",
+      "checkedAt": "2026-11-03T15:32:09.619Z",
+      "variantCount": 1,
+      "variantCors": "*",
+      "segmentCors": "*",
+      "segmentDurations": [
+        5,
+        5,
+        5,
+        5
+      ],
+      "streams": [
+        {
+          "pid": 211,
+          "type": "0x1b",
+          "format": "H264/AVC"
+        }
+      ],
+      "sps": {
+        "profile": 77,
+        "constraints": 0,
+        "level": 31,
+        "codec": "avc1.4d001f"
+      },
+      "note": "Container and SPS inspection does not prove browser playback."
+    }
+  ]
+}

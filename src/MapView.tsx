@@ -51,6 +51,7 @@ export interface MapViewProps {
   onSelect: (object: MapObject) => void;
   onStatus: (status: string) => void;
   onCoordinate?: (latitude: number, longitude: number) => void;
+  zoomRequest?: { direction: "in" | "out"; nonce: number };
 }
 
 const ALMATY = {
@@ -131,20 +132,20 @@ export default function MapView(props: MapViewProps) {
         msaaSamples: 2,
       });
       viewerRef.current = viewer;
-      const markers = new CustomDataSource('qorgau-markers');
+      const markers = new CustomDataSource("qorgau-markers");
       markers.clustering.enabled = true;
       markers.clustering.pixelRange = 40;
       markers.clustering.minimumClusterSize = 8;
       markers.clustering.clusterEvent.addEventListener((entities, cluster) => {
         cluster.label.show = true;
         cluster.label.text = String(entities.length);
-        cluster.label.font = 'bold 15px sans-serif';
+        cluster.label.font = "bold 15px sans-serif";
         cluster.label.fillColor = Color.WHITE;
         cluster.label.showBackground = true;
         cluster.label.id = entities;
         cluster.point.show = true;
         cluster.point.pixelSize = 26;
-        cluster.point.color = Color.fromCssColorString('#187f89');
+        cluster.point.color = Color.fromCssColorString("#187f89");
         cluster.point.id = entities;
         cluster.billboard.show = false;
       });
@@ -177,7 +178,14 @@ export default function MapView(props: MapViewProps) {
           const picked = viewer.scene.pick(movement.position);
           const entity = picked?.id;
           if (Array.isArray(entity) && entity[0] instanceof Entity) {
-            void viewer.flyTo(entity, { duration: 0.6, offset: new HeadingPitchRange(0, -1.4, Math.max(300, viewer.camera.positionCartographic.height / 2)) });
+            void viewer.flyTo(entity, {
+              duration: 0.6,
+              offset: new HeadingPitchRange(
+                0,
+                -1.4,
+                Math.max(300, viewer.camera.positionCartographic.height / 2),
+              ),
+            });
             return;
           }
           if (entity instanceof Entity && typeof entity.id === "string") {
@@ -188,7 +196,10 @@ export default function MapView(props: MapViewProps) {
             const position = ray && viewer.scene.globe.pick(ray, viewer.scene);
             if (position) {
               const cartographic = Cartographic.fromCartesian(position);
-              latest.current.onCoordinate(CesiumMath.toDegrees(cartographic.latitude), CesiumMath.toDegrees(cartographic.longitude));
+              latest.current.onCoordinate(
+                CesiumMath.toDegrees(cartographic.latitude),
+                CesiumMath.toDegrees(cartographic.longitude),
+              );
             }
           }
         },
@@ -355,7 +366,8 @@ export default function MapView(props: MapViewProps) {
         position: Cartesian3.fromDegrees(object.longitude, object.latitude),
         show: latest.current.visibleKinds.includes(object.kind),
         label: {
-          text: `${object.isDemo ? 'DEMO · ' : ''}${object.name}`,
+          show: false,
+          text: `${object.isDemo ? "DEMO · " : ""}${object.name}`,
           font: "500 12px Inter, system-ui, sans-serif",
           fillColor: Color.WHITE,
           outlineColor: Color.fromCssColorString("#07131e"),
@@ -394,11 +406,16 @@ export default function MapView(props: MapViewProps) {
       const isSelected = props.selected?.id === object.id;
       if (entity.point) {
         entity.point.pixelSize = new ConstantProperty(isSelected ? 18 : 11);
-        entity.point.color = new ConstantProperty(Color.fromCssColorString(objectColor(object)));
-        entity.point.outlineColor = new ConstantProperty(Color.fromCssColorString(isSelected ? "#e6fff8" : "#07131e"));
+        entity.point.color = new ConstantProperty(
+          Color.fromCssColorString(objectColor(object)),
+        );
+        entity.point.outlineColor = new ConstantProperty(
+          Color.fromCssColorString(isSelected ? "#e6fff8" : "#07131e"),
+        );
         entity.point.outlineWidth = new ConstantProperty(3);
       }
       if (entity.label) {
+        entity.label.show = new ConstantProperty(isSelected);
         entity.label.fillColor = new ConstantProperty(
           isSelected ? Color.fromCssColorString("#baffdf") : Color.WHITE,
         );
@@ -409,6 +426,18 @@ export default function MapView(props: MapViewProps) {
     }
     viewer.scene.requestRender();
   }, [ready, props.objects, props.visibleKinds, props.selected, retry]);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!ready || !viewer || viewer.isDestroyed() || !props.zoomRequest) return;
+    const distance = Math.max(
+      100,
+      viewer.camera.positionCartographic.height * 0.45,
+    );
+    if (props.zoomRequest.direction === "in") viewer.camera.zoomIn(distance);
+    else viewer.camera.zoomOut(distance);
+    viewer.scene.requestRender();
+  }, [ready, props.zoomRequest?.nonce, retry]);
 
   useEffect(() => {
     const viewer = viewerRef.current;

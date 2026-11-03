@@ -1457,3 +1457,22 @@
     scroll-behavior: auto !important;
   }
 }
+.cv-filter-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cv-filter-bar .cv-search { grid-column: span 2; }
+.cv-favorites-bar { display:flex; align-items:center; gap:14px; margin:10px 0; color:#7e9aaf; font-size:10px; }
+.cv-favorites-filter { display:flex; align-items:center; gap:7px; padding:8px 10px !important; border:1px solid #2a4156 !important; background:#12283b !important; color:#9ebcd0; border-radius:5px; font-size:11px !important; }
+.cv-favorites-filter[aria-pressed="true"], .cv-favorite[aria-pressed="true"] { color:#f0b2bc; }
+.cv-detail-tools { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0 0 14px; }
+.cv-detail-tools > span { margin-left:auto; color:#7ac8e2; font-size:11px; }
+.cv-detail-expanded .cv-detail-layout { grid-template-columns:minmax(0, 1fr); }
+.cv-detail-expanded .cv-information dl { grid-template-columns:1fr 2fr 1fr 2fr; }
+.cv-source-evidence { padding:0 14px; color:#88a7ba; font-size:10px; line-height:1.7; overflow-wrap:anywhere; }
+.public-camera-image-frame { background:#07111d; min-height:100px; }
+.public-camera-image { display:block; width:100%; aspect-ratio:16/9; object-fit:contain; background:#07111d; }
+.public-camera-image-frame:fullscreen { display:grid; place-items:center; }
+.public-camera-image-frame:fullscreen .public-camera-image { width:100%; height:100vh; }
+.public-camera-embed { display:block; width:100%; aspect-ratio:16/9; border:1px solid #294254; border-radius:5px; background:#07111d; }
+.public-camera-placeholder { display:grid; place-items:center; min-height:160px; aspect-ratio:16/9; background:radial-gradient(ellipse at center,#153044,#07111e); color:#7b9fb6; border:1px solid #294254; border-radius:5px; text-align:center; font-size:12px; padding:20px; }
+@media(max-width:700px) { .cv-favorites-bar { align-items:flex-start; flex-direction:column; gap:7px; } .cv-detail-expanded .cv-information dl { grid-template-columns:1fr 1.2fr; } }
+@media(max-width:540px) { .cv-filter-bar { grid-template-columns:repeat(2,minmax(0,1fr)); } .cv-detail-tools > span { width:100%; margin-left:0; } }
+.cv-source-preview { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }

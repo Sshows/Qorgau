@@ -7,6 +7,15 @@ import {
   counts,
 } from "../src/operations.js";
 import type { EventRecord, Filters, Role } from "../src/operations.js";
+import { getPublicData } from "./publicSources.js";
+import {
+  answerPublicQuestion,
+  consumePublicQuota,
+  publicAiConfigured,
+  PublicAiError,
+} from "./publicAi.js";
+import { verifiedCameraCatalog } from "../src/cameraCatalog.js";
+import { validateChat } from "../src/publicChat.js";
 
 export class HttpError extends Error {
   constructor(
@@ -103,6 +112,7 @@ function setCookie(res: ServerResponse, token: string, seconds: number) {
 }
 async function bodyOf(
   req: IncomingMessage & { body?: unknown },
+  maxBytes = 16384,
 ): Promise<Record<string, unknown>> {
   let raw = req.body;
   if (raw === undefined) {
@@ -111,13 +121,13 @@ async function bodyOf(
     for await (const chunk of req) {
       const b = Buffer.from(chunk);
       size += b.length;
-      if (size > 16384) throw new HttpError(413, "Запрос слишком большой.");
+      if (size > maxBytes) throw new HttpError(413, "Запрос слишком большой.");
       parts.push(b);
     }
     raw = Buffer.concat(parts).toString();
   }
   if (typeof raw === "string") {
-    if (Buffer.byteLength(raw) > 16384)
+    if (Buffer.byteLength(raw) > maxBytes)
       throw new HttpError(413, "Запрос слишком большой.");
     try {
       raw = JSON.parse(raw);
@@ -129,7 +139,7 @@ async function bodyOf(
     !raw ||
     typeof raw !== "object" ||
     Array.isArray(raw) ||
-    JSON.stringify(raw).length > 16384
+    Buffer.byteLength(JSON.stringify(raw)) > maxBytes
   )
     throw new HttpError(400, "Неверный формат запроса.");
   return raw as Record<string, unknown>;
@@ -183,9 +193,45 @@ export default async function handler(
       return send(res, 200, {
         configured,
         ai,
-        mode: configured ? "database" : "demo",
+        publicAi: publicAiConfigured(),
+        mode: "public",
+        operatorMode: configured ? "database" : "demo",
         timezone: "Asia/Almaty",
       });
+    if (path === "public-data" && method === "GET") {
+      res.setHeader(
+        "Cache-Control",
+        "public, max-age=0, s-maxage=300, stale-while-revalidate=60",
+      );
+      return send(res, 200, await getPublicData());
+    }
+    if (path === "public-ai" && method === "POST") {
+      if (!publicAiConfigured())
+        throw new PublicAiError(
+          503,
+          "AI не подключён. Добавьте OPENAI_API_KEY в серверные переменные Vercel.",
+        );
+      const body = await bodyOf(req, 100000);
+      validateChat(body);
+      const identity = String(
+        req.headers["x-vercel-forwarded-for"] ??
+          req.socket.remoteAddress ??
+          "unknown",
+      )
+        .split(",")[0]
+        .trim()
+        .slice(0, 100);
+      consumePublicQuota(identity);
+      return send(
+        res,
+        200,
+        await answerPublicQuestion(
+          body,
+          await getPublicData(),
+          verifiedCameraCatalog,
+        ),
+      );
+    }
     if (path === "login" && method === "POST") {
       const body = await bodyOf(req);
       if (
@@ -362,19 +408,17 @@ export default async function handler(
           "Лимит AI: 5 запросов в минуту и 30 в сутки на пользователя.",
         );
       const events = filterEvents(await allEvents(token), filters);
-      const sources = events
-        .slice(0, 150)
-        .map((e) => ({
-          id: e.id,
-          title: e.title,
-          category: e.category,
-          district: e.district,
-          status: e.status,
-          priority: e.priority,
-          occurred_at: e.occurred_at,
-          is_demo: e.is_demo,
-          source: e.source,
-        }));
+      const sources = events.slice(0, 150).map((e) => ({
+        id: e.id,
+        title: e.title,
+        category: e.category,
+        district: e.district,
+        status: e.status,
+        priority: e.priority,
+        occurred_at: e.occurred_at,
+        is_demo: e.is_demo,
+        source: e.source,
+      }));
       const context = {
         filters,
         total: events.length,
@@ -427,7 +471,7 @@ export default async function handler(
     throw new HttpError(404, "API-метод не найден.");
   } catch (error) {
     const status =
-      error instanceof HttpError
+      error instanceof HttpError || error instanceof PublicAiError
         ? error.status
         : error instanceof TypeError
           ? 502
@@ -436,7 +480,7 @@ export default async function handler(
             : 400;
     send(res, status, {
       error:
-        error instanceof HttpError
+        error instanceof HttpError || error instanceof PublicAiError
           ? error.message
           : status === 502 || status === 504
             ? "Внешний сервис не отвечает. Повторите запрос позже."

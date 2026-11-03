@@ -73,6 +73,11 @@ export interface CameraRecord {
   status: string;
   checked_at: string | null;
   is_demo: boolean;
+  city?: string;
+  stream_type?: "hls" | "youtube" | "image" | "external";
+  embed_allowed?: boolean;
+  transport_checked_at?: string | null;
+  catalog_status?: string;
 }
 export interface AuditRecord {
   id: string;

@@ -8,6 +8,7 @@ import {
   CircleHelp,
   ExternalLink,
   Grid2X2,
+  Heart,
   List,
   MapPin,
   Maximize2,
@@ -19,7 +20,7 @@ import {
   Settings2,
   VideoOff,
 } from "lucide-react";
-import { districts } from "./data";
+import { cameraPreviewUrl, cameraStreamLabel, cameraStreamLabels } from "./cameraCatalog";
 import { cameraTypes, cameraStatuses, displayTime } from "./operations";
 import type { CameraRecord } from "./operations";
 import { CameraForm, Select } from "./OperationForms";
@@ -33,6 +34,9 @@ export type PlaybackChecks = Record<
 >;
 type CatalogState = {
   query: string;
+  city: string;
+  stream: string;
+  favorites: boolean;
   district: string;
   type: string;
   status: string;
@@ -40,13 +44,16 @@ type CatalogState = {
   view: string;
   page: number;
 };
-const catalogueKey = "qorgau-camera-catalogue-v3";
+const catalogueKey = "qorgau-camera-catalogue-v4";
 const initialCatalogue: CatalogState = {
   query: "",
+  city: "",
+  stream: "",
+  favorites: false,
   district: "",
   type: "",
   status: "",
-  sort: "name",
+  sort: "city",
   view: "grid",
   page: 0,
 };
@@ -70,6 +77,13 @@ function readCatalogue(): CatalogState {
     return { ...initialCatalogue };
   }
 }
+const favoritesKey = "qorgau-camera-favorites-v1";
+function readFavorites(): string[] {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(favoritesKey) || "[]");
+    return Array.isArray(value) ? value.filter((id): id is string => typeof id === "string").slice(0, 500) : [];
+  } catch { return []; }
+}
 function statusClass(status: string) {
   return status === "Доступна"
     ? "available"
@@ -79,10 +93,14 @@ function statusClass(status: string) {
         ? "disabled"
         : "unknown";
 }
-function CameraArtwork({ index, title }: { index: number; title: string }) {
+function CameraArtwork({ index, title, camera }: { index: number; title: string; camera: CameraRecord }) {
+  const preview = cameraPreviewUrl(camera);
+  const [failedPreview, setFailedPreview] = useState<string | undefined>();
+  const hasPreview = Boolean(preview && failedPreview !== preview);
   return (
     <div className={`cv-art cv-art-${index % 3}`} aria-hidden="true">
-      <svg viewBox="0 0 600 260" preserveAspectRatio="xMidYMid slice">
+      {hasPreview && <img className="cv-source-preview" src={preview} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailedPreview(preview)} />}
+      {!hasPreview && <svg viewBox="0 0 600 260" preserveAspectRatio="xMidYMid slice">
         <defs>
           <linearGradient id={`cv-mountain-${index}`} x2="0" y2="1">
             <stop stopColor="#1d7c9f" stopOpacity=".3" />
@@ -126,11 +144,11 @@ function CameraArtwork({ index, title }: { index: number; title: string }) {
           stroke="#62c9e4"
           opacity=".06"
         />
-      </svg>
+      </svg>}
       <div className="cv-art-caption">
         <span>QORGAU / PUBLIC SOURCE</span>
         <strong>{title}</strong>
-        <small>Схема · не кадр с камеры</small>
+        <small>{hasPreview ? "Кадр источника · не проверка эфира" : "Предпросмотр не загружен · нажмите для проверки"}</small>
       </div>
       <span className="cv-play">
         <Play size={21} fill="currentColor" />
@@ -170,6 +188,9 @@ export default function CameraCenter({
       ? {
           status: initialStatus,
           query: "",
+          city: "",
+          stream: "",
+          favorites: false,
           type: "",
           district: initialDistrict || "",
           page: 0,
@@ -185,6 +206,10 @@ export default function CameraCenter({
   const [edit, setEdit] = useState<CameraRecord | "new" | null>(null);
   const [wall, setWall] = useState<string[]>([]);
   const [coordinateList, setCoordinateList] = useState(false);
+  const [favorites, setFavorites] = useState(readFavorites);
+  const [largePlayer, setLargePlayer] = useState(false);
+  useEffect(() => { try { localStorage.setItem(favoritesKey, JSON.stringify(favorites)); } catch { /* Favorites still work for this session. */ } }, [favorites]);
+  function toggleFavorite(id: string) { setFavorites((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]); }
   const previousToken = useRef(navigationToken);
   const topRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -201,6 +226,9 @@ export default function CameraCenter({
       setCatalogue((c) => ({
         ...c,
         query: "",
+        city: "",
+        stream: "",
+        favorites: false,
         type: "",
         status: initialStatus || "",
         district: initialDistrict || "",
@@ -225,31 +253,30 @@ export default function CameraCenter({
       cameras.filter((c) => checked(c).status === s).length,
     ]),
   );
+  const cities = [...new Set(cameras.map((c) => c.city || "Алматы"))];
+  const districtOptions = [...new Set(cameras.filter((c) => !catalogue.city || (c.city || "Алматы") === catalogue.city).map((c) => c.district).filter(Boolean))];
   const filtered = cameras
     .filter(
       (c) =>
         (!catalogue.query.trim() ||
-          `${c.name} ${c.address} ${c.district}`
+          `${c.name} ${c.address} ${c.district} ${c.city || "Алматы"}`
             .toLocaleLowerCase("ru")
             .includes(catalogue.query.trim().toLocaleLowerCase("ru"))) &&
+        (!catalogue.city || (c.city || "Алматы") === catalogue.city) &&
+        (!catalogue.stream || (c.stream_type || "hls") === catalogue.stream) &&
+        (!catalogue.favorites || favorites.includes(c.id)) &&
         (!catalogue.district || c.district === catalogue.district) &&
         (!catalogue.type || c.type === catalogue.type) &&
         (!catalogue.status || checked(c).status === catalogue.status),
     )
-    .sort((a, b) =>
-      String(
-        catalogue.sort === "status"
-          ? checked(a).status
-          : a[catalogue.sort === "district" ? "district" : "name"],
-      ).localeCompare(
-        String(
-          catalogue.sort === "status"
-            ? checked(b).status
-            : b[catalogue.sort === "district" ? "district" : "name"],
-        ),
-        "ru",
-      ),
-    );
+    .sort((a, b) => {
+      if (catalogue.sort === "city") {
+        const rank = (c: CameraRecord) => c.city === "Алматы" || !c.city ? 0 : c.city === "Алматинская область" ? 1 : c.city === "Актау" ? 2 : 3;
+        return rank(a) - rank(b) || (a.city || "Алматы").localeCompare(b.city || "Алматы", "ru") || a.name.localeCompare(b.name, "ru");
+      }
+      const value = (c: CameraRecord) => catalogue.sort === "status" ? checked(c).status : c[catalogue.sort === "district" ? "district" : "name"];
+      return value(a).localeCompare(value(b), "ru");
+    });
   const currentPage = Math.max(
     0,
     Math.min(catalogue.page, Math.ceil(filtered.length / 12) - 1),
@@ -279,15 +306,21 @@ export default function CameraCenter({
         <Player
           key={c.id}
           source={{
+            id: c.id,
             name: c.name,
             sourceUrl: c.source_url,
             streamUrl: c.stream_url,
+            streamType: c.stream_type,
+            embedAllowed: c.embed_allowed,
           }}
           onPlayback={(s) => onCheck(c.id, c.stream_url, s)}
         />
       </Suspense>
     );
   }
+  const sequence = active && filtered.some((c) => c.id === active.id) ? filtered : cameras;
+  const activeIndex = sequence.findIndex((c) => c.id === activeId);
+  const nextCamera = sequence.length > 1 ? sequence[(activeIndex + 1) % sequence.length] : null;
   const editor = edit && (
     <CameraForm
       existing={edit === "new" ? undefined : edit}
@@ -297,7 +330,7 @@ export default function CameraCenter({
   );
   if (active)
     return (
-      <div className="cv-page cv-detail" ref={topRef}>
+      <div className={`cv-page cv-detail ${largePlayer ? "cv-detail-expanded" : ""}`} ref={topRef}>
         <nav className="cv-breadcrumb" aria-label="Камера: хлебные крошки">
           <button onClick={() => setActiveId(null)}>Видеонаблюдение</button>
           <ChevronRight size={14} />
@@ -308,11 +341,11 @@ export default function CameraCenter({
             <ArrowLeft size={17} />К каталогу
           </button>
           <div>
-            <span className="cv-kicker">ПУБЛИЧНАЯ КАМЕРА / АЛМАТЫ</span>
+            <span className="cv-kicker">ПУБЛИЧНЫЙ ИСТОЧНИК / {(active.city || "Алматы").toLocaleUpperCase("ru")}</span>
             <h1>{active.name}</h1>
             <p>
               <MapPin size={14} />
-              {active.address} · {active.district}
+              {active.city || "Алматы"} · {active.address}{active.district ? ` · ${active.district}` : ""}
             </p>
           </div>
           <span className={`cv-status ${statusClass(checked(active).status)}`}>
@@ -320,12 +353,18 @@ export default function CameraCenter({
             {checked(active).status}
           </span>
         </div>
+        <div className="cv-detail-tools">
+          <button className="cv-secondary" aria-pressed={favorites.includes(active.id)} onClick={() => toggleFavorite(active.id)}><Heart size={15} fill={favorites.includes(active.id) ? "currentColor" : "none"} />{favorites.includes(active.id) ? "В избранном" : "В избранное"}</button>
+          <button className="cv-secondary" aria-pressed={largePlayer} onClick={() => setLargePlayer((v) => !v)}><Maximize2 size={15} />{largePlayer ? "Обычный размер" : "Большой плеер"}</button>
+          {nextCamera && <button className="cv-secondary" onClick={() => open(nextCamera)}>Следующая камера <ChevronRight size={15} /></button>}
+          <span>{cameraStreamLabel(active)}</span>
+        </div>
         <div className="cv-detail-layout">
           <section className="cv-viewer">
             <div className="cv-panel-header">
               <h3>
                 <MonitorPlay size={17} />
-                Просмотр трансляции
+                Просмотр источника
               </h3>
               <span>ПОДКЛЮЧЕНИЕ ПО ЗАПРОСУ</span>
             </div>
@@ -333,8 +372,7 @@ export default function CameraCenter({
             <div className="cv-player-footer">
               <CircleHelp size={15} />
               <span>
-                Статус подтверждается воспроизведением в этом браузере. Превью
-                не заменяет проверку прямого эфира.
+                {active.stream_type === "image" ? "Статус подтверждает загрузку изображения, а не свежесть кадра или прямой эфир." : active.stream_type === "youtube" ? "Внешний плеер управляется YouTube. Проверка открытия iframe не подтверждает воспроизведение." : "Статус подтверждается фактическим воспроизведением видео в этом браузере."}
               </span>
             </div>
           </section>
@@ -345,12 +383,14 @@ export default function CameraCenter({
             </div>
             <dl>
               <dt>Город</dt>
-              <dd>Алматы</dd>
+              <dd>{active.city || "Алматы"}</dd>
               <dt>Район</dt>
-              <dd>{active.district}</dd>
+              <dd>{active.district || "Не указан источником"}</dd>
               <dt>Тип</dt>
               <dd>{active.type}</dd>
-              <dt>Координаты</dt>
+              <dt>Формат</dt>
+              <dd>{cameraStreamLabel(active)}</dd>
+              <dt>Координаты каталога</dt>
               <dd>
                 {active.latitude === null || active.longitude === null
                   ? "Не подтверждены"
@@ -358,10 +398,12 @@ export default function CameraCenter({
               </dd>
               <dt>Последняя проверка в браузере</dt>
               <dd>{displayTime(checked(active).checked_at)}</dd>
+              <dt>Проверка HTTP источника</dt>
+              <dd>{displayTime(active.transport_checked_at || null)}</dd>
               <dt>Основание статуса</dt>
               <dd>
                 {checked(active).status === "Доступна"
-                  ? "Плеер подтвердил воспроизведение в текущей сессии."
+                  ? active.stream_type === "image" ? "Изображение успешно загружено в текущей сессии. Время съёмки не подтверждено." : "Плеер подтвердил воспроизведение в текущей сессии."
                   : checked(active).status === "Недоступна"
                     ? "Плеер сообщил об ошибке подключения. Причину уточняйте у владельца источника."
                     : checked(active).status === "Отключена"
@@ -369,6 +411,7 @@ export default function CameraCenter({
                       : "Воспроизведение ещё не проверялось в этой сессии."}
               </dd>
             </dl>
+            {active.catalog_status && <p className="cv-source-evidence">{active.catalog_status}</p>}
             <p className="cv-coordinate-note">
               <MapPin size={15} />
               {active.location_note ||
@@ -380,16 +423,16 @@ export default function CameraCenter({
               target="_blank"
               rel="noopener noreferrer"
             >
-              Оригинальный источник <ExternalLink size={15} />
+              Страница источника <ExternalLink size={15} />
             </a>
-            {onNavigateMap && (
+            {onNavigateMap && active.latitude !== null && active.longitude !== null && (
               <button
                 className="cv-secondary"
                 onClick={() => onNavigateMap(active)}
               >
                 <MapPin size={16} />
                 {active.latitude === null
-                  ? "Показать ориентир на карте"
+                  ? "Место не подтверждено"
                   : "Показать камеру на карте"}
               </button>
             )}
@@ -415,7 +458,7 @@ export default function CameraCenter({
                   <Camera size={18} />
                   <span>
                     <strong>{c.name}</strong>
-                    <small>{c.district}</small>
+                    <small>{c.city || "Алматы"} · {cameraStreamLabel(c)}</small>
                   </span>
                   <ArrowUpRight size={16} />
                 </button>
@@ -435,7 +478,7 @@ export default function CameraCenter({
             Видеонаблюдение{" "}
             <span className="cv-live-label">ПУБЛИЧНЫЕ ИСТОЧНИКИ</span>
           </h1>
-          <p>Алматы · единый каталог открытых трансляций</p>
+          <p>Алматы, область и города Казахстана · публичные видео и снимки</p>
         </div>
         {canAdmin && (
           <button className="op-primary" onClick={() => setEdit("new")}>
@@ -445,11 +488,12 @@ export default function CameraCenter({
         )}
       </div>
       <div className="cv-filter-bar">
+        <Select label="Город / регион" value={catalogue.city} onChange={(city) => update({ city, district: "" })} options={cities} all="Все города и регионы" />
         <Select
           label="Район"
           value={catalogue.district}
           onChange={(district) => update({ district })}
-          options={districts.map((d) => d.name)}
+          options={districtOptions}
           all="Все районы"
         />
         <Select
@@ -466,6 +510,7 @@ export default function CameraCenter({
           options={cameraStatuses}
           all="Все статусы"
         />
+        <label className="op-field"><span>Формат источника</span><select value={catalogue.stream} onChange={(e) => update({ stream: e.target.value })}><option value="">Все форматы</option>{Object.entries(cameraStreamLabels).map(([id, label]) => <option value={id} key={id}>{label}</option>)}</select></label>
         <label className="op-field cv-search">
           <span>Поиск камеры</span>
           <input
@@ -482,6 +527,7 @@ export default function CameraCenter({
           <span>Сбросить</span>
         </button>
       </div>
+      <div className="cv-favorites-bar"><button className="cv-favorites-filter" aria-pressed={catalogue.favorites} onClick={() => update({ favorites: !catalogue.favorites })}><Heart size={14} fill={catalogue.favorites ? "currentColor" : "none"} />Только избранные ({cameras.filter((c) => favorites.includes(c.id)).length})</button><span>Видео и снимки имеют отдельные форматы. Потоки подключаются по запросу.</span></div>
       <div className="cv-summary">
         <button onClick={() => update({ status: "" })}>
           <Camera size={17} />
@@ -559,6 +605,7 @@ export default function CameraCenter({
                 value={catalogue.sort}
                 onChange={(e) => update({ sort: e.target.value })}
               >
+                <option value="city">Алматы и область, затем другие города</option>
                 <option value="name">По названию</option>
                 <option value="district">По району</option>
                 <option value="status">По доступности</option>
@@ -590,7 +637,7 @@ export default function CameraCenter({
                   aria-label={`Смотреть ${c.name}`}
                   onClick={() => open(c)}
                 >
-                  <CameraArtwork index={index} title={c.name} />
+                  <CameraArtwork index={index} title={c.name} camera={c} />
                   <span
                     className={`cv-status ${statusClass(checked(c).status)}`}
                   >
@@ -598,7 +645,7 @@ export default function CameraCenter({
                     {checked(c).status}
                   </span>
                   <span className="cv-stream-type">
-                    {c.is_demo ? "DEMO" : "HLS"}
+                    {c.is_demo ? "DEMO" : cameraStreamLabel(c)}
                   </span>
                 </button>
                 <div className="cv-card-body">
@@ -607,6 +654,7 @@ export default function CameraCenter({
                       {c.name}
                       <ArrowUpRight size={14} />
                     </button>
+                    <button className="cv-icon-button cv-favorite" aria-label={favorites.includes(c.id) ? "Убрать " + c.name + " из избранного" : "Добавить " + c.name + " в избранное"} aria-pressed={favorites.includes(c.id)} onClick={() => toggleFavorite(c.id)}><Heart size={15} fill={favorites.includes(c.id) ? "currentColor" : "none"} /></button>
                     {canAdmin && (
                       <button
                         className="cv-icon-button"
@@ -622,7 +670,7 @@ export default function CameraCenter({
                     {c.address}
                   </p>
                   <div className="cv-card-meta">
-                    <span>{c.district}</span>
+                    <span>{c.city || "Алматы"}{c.district ? ` · ${c.district}` : ""}</span>
                     <span>
                       <Camera size={12} />
                       {c.type}
@@ -725,7 +773,7 @@ export default function CameraCenter({
             </button>
           </div>
           <OperationsMap
-            cameras={filtered}
+            cameras={filtered.map((c) => ({ ...c, ...checked(c) }))}
             events={[]}
             compact
             district={catalogue.district}
@@ -752,16 +800,14 @@ export default function CameraCenter({
           >
             <CircleHelp size={15} />
             <span>
-              {mapped} из {filtered.length} с точными координатами
+              {mapped} из {filtered.length} с опубликованными координатами
             </span>
             <ChevronRight size={14} />
           </button>
           {coordinateList && (
             <div className="cv-coordinate-explanation">
               <p>
-                Камеры без подтверждённых координат не показываются как
-                отдельные точки. Общий ориентир Шымбулака не является местом
-                установки каждой камеры.
+                На карте используются опубликованные источником координаты с атрибуцией в паспорте камеры. Для остальных камер положение не выдумывается; общий ориентир курорта не заменяет место установки.
               </p>
               {filtered
                 .filter((c) => c.latitude === null || c.longitude === null)
@@ -835,9 +881,9 @@ export default function CameraCenter({
         <summary>
           <ExternalLink size={16} />
           <span>
-            Другие открытые источники
+            Первоисточники и каталоги
             <small>
-              Отдельные каталоги · не входят в число подключённых камер
+              Проверенные ссылки и ограничения покрытия
             </small>
           </span>
           <ChevronRight size={16} />
@@ -852,7 +898,7 @@ export default function CameraCenter({
             >
               <span>
                 <strong>Вершины из окна</strong>
-                <small>Алматы · наличие эфира не проверено</small>
+                <small>Запись недоступна у YouTube · исключена из каталога</small>
               </span>
               <ExternalLink size={15} />
             </a>
@@ -874,22 +920,21 @@ export default function CameraCenter({
           <section>
             <h3>Другие города Казахстана</h3>
             <a
-              href="https://www.xcom.kz/index.php?Itemid=100055&id=476&option=com_content&view=article"
+              href="https://pocketworld.org/ru/webcams/country/kz"
               target="_blank"
               rel="noopener noreferrer"
             >
               <span>
-                <strong>Актау · XCOM</strong>
+                <strong>Актау · XCOM / PocketWorld</strong>
                 <small>
-                  Отдельно от Алматы · публичные HLS-манифесты доступны,
-                  воспроизведение не проверено
+                  Конкретные HLS-камеры добавлены в каталог; доступны отдельным городом
                 </small>
               </span>
               <ExternalLink size={15} />
             </a>
           </section>
           <section>
-            <h3>Глобальный агрегатор</h3>
+            <h3>Публичные метаданные</h3>
             <a
               href="https://osirisai.live/"
               target="_blank"
@@ -898,7 +943,7 @@ export default function CameraCenter({
               <span>
                 <strong>OSIRIS AI</strong>
                 <small>
-                  Агрегатор CCTV и новостей · прямые трансляции не подтверждены
+                  Каталог использован для поиска конкретных публичных URL
                 </small>
               </span>
               <ExternalLink size={15} />
@@ -906,9 +951,7 @@ export default function CameraCenter({
           </section>
         </div>
         <p>
-          Ссылки открывают оригинальные платформы в новой вкладке. Превью,
-          внешний каталог или доступный манифест не подтверждают работающий
-          эфир. Эти источники не участвуют в показателях камер Алматы.
+          Показатели считают конкретные записи каталога, а не ссылки на страницы. Доступный манифест или снимок не подтверждают прямой эфир. Каталоги могут ошибаться в географии; камеры других городов отделены фильтром.
         </p>
       </details>
       {editor}

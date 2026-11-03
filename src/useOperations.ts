@@ -32,7 +32,9 @@ export async function api<T>(
       credentials: "same-origin",
       headers: body === undefined ? {} : { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(route === "ai" ? 58000 : 25000),
+      signal: AbortSignal.timeout(
+        route === "ai" || route === "public-ai" ? 58000 : 25000,
+      ),
     },
   );
   if (!response.headers.get("content-type")?.includes("application/json"))
