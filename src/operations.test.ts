@@ -1,5 +1,22 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+
+test("global event search includes district, category and source, with trimmed input", () => {
+  const expected = demoEvents.filter(
+    (e) => e.district === "Бостандыкский",
+  ).length;
+  assert.equal(
+    filterEvents(demoEvents, { ...emptyFilters, query: " Бостандыкский " })
+      .length,
+    expected,
+  );
+  assert.ok(
+    filterEvents(demoEvents, {
+      ...emptyFilters,
+      query: "Встроенный учебный сценарий",
+    }).length > 0,
+  );
+});
 import {
   demoEvents,
   validateEvent,

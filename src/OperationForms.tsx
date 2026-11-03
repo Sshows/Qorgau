@@ -172,11 +172,13 @@ export function EventForm({
   demo,
   onSave,
   onClose,
+  embedded = false,
 }: {
   existing?: EventRecord;
   demo: boolean;
   onSave: (input: EventInput) => Promise<unknown>;
   onClose: () => void;
+  embedded?: boolean;
 }) {
   const [form, setForm] = useState<EventInput>(
     existing ?? {
@@ -217,9 +219,10 @@ export function EventForm({
     }
   }
   return (
-    <Modal
+    <FormFrame
       title={existing ? "Редактирование события" : "Новое событие"}
       onClose={onClose}
+      embedded={embedded}
       wide
     >
       <form onSubmit={submit} className="op-form">
@@ -376,8 +379,21 @@ export function EventForm({
           </button>
         </div>
       </form>
-    </Modal>
+    </FormFrame>
   );
+}
+function FormFrame({
+  embedded,
+  children,
+  ...props
+}: {
+  embedded: boolean;
+  children: ReactNode;
+  title: string;
+  onClose: () => void;
+  wide?: boolean;
+}) {
+  return embedded ? <>{children}</> : <Modal {...props}>{children}</Modal>;
 }
 export function EventDetails({
   event,

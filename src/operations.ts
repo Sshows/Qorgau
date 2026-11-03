@@ -165,9 +165,9 @@ export function filterEvents(events: EventRecord[], f: Filters): EventRecord[] {
     .filter(
       (e) =>
         (!f.query ||
-          `${e.title} ${e.description} ${e.id}`
+          `${e.title} ${e.description} ${e.id} ${e.district} ${e.category} ${e.source}`
             .toLowerCase()
-            .includes(f.query.toLowerCase())) &&
+            .includes(f.query.trim().toLowerCase())) &&
         (!f.district || e.district === f.district) &&
         (!f.category || e.category === f.category) &&
         (!f.status || e.status === f.status) &&

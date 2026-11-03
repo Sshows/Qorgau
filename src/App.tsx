@@ -18,7 +18,6 @@ import {
   FileText,
   Sparkles,
   Settings,
-  FlaskConical,
   RefreshCw,
   Plus,
   ArrowUpRight,
@@ -27,46 +26,65 @@ import {
   Menu,
   Database,
   Radio,
+  Search,
+  MapPin,
+  ArrowLeft,
+  ChevronRight,
+  Clock3,
+  CheckCircle2,
+  Activity,
+  Download,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useOperations, api } from "./useOperations";
 import {
   filterEvents,
   emptyFilters,
   displayTime,
-  counts,
   downloadFile,
   eventsCsv,
   roleNames,
 } from "./operations";
-import type { EventRecord, Filters, Role } from "./operations";
-import {
-  EventForm,
-  EventDetails,
-  EventFilters,
-  Modal,
-  Select,
-} from "./OperationForms";
+import type { EventRecord, Filters, Role, CameraRecord } from "./operations";
+import { EventForm, EventFilters, Modal, Select } from "./OperationForms";
 import OperationsMap from "./OperationsMap";
 import CameraCenter from "./CameraCenter";
 import type { PlaybackChecks } from "./CameraCenter";
-import Analytics, { Bars, Trend } from "./Analytics";
+import Analytics, { Trend } from "./Analytics";
 import AiPanel from "./AiPanel";
 import { districts } from "./data";
 import { additionalCameraLinks, twoGisTrafficUrl } from "./publicSources";
+import {
+  parseRoute,
+  routeHash,
+  loadSession,
+  filterRouteValues,
+} from "./navigation";
+import type { Page } from "./navigation";
 import "./operations.css";
+import "./workspace.css";
 const LegacyMap = lazy(() => import("./LegacyMap"));
 const navigation = [
   ["overview", "Обзор", LayoutDashboard],
-  ["map", "Карта города", Map],
-  ["cameras", "Видеомониторинг", Camera],
-  ["events", "Центр событий", TriangleAlert],
+  ["map", "Карта", Map],
+  ["events", "События", TriangleAlert],
+  ["cameras", "Видеонаблюдение", Camera],
   ["analytics", "Аналитика", ChartNoAxesCombined],
   ["reports", "Отчёты", FileText],
   ["ai", "QORGAU AI", Sparkles],
-  ["settings", "Система и источники", Settings],
-  ["lab", "Экспериментальный", FlaskConical],
+  ["settings", "Настройки", Settings],
 ] as const;
-type Page = (typeof navigation)[number][0];
+const subtitles: Record<string, string> = {
+  overview: "Ситуационная картина по данным QORGAU",
+  map: "Объекты, события и публичные камеры на карте Алматы",
+  events: "Регистрация, проверка и история обработки",
+  cameras: "Публичные трансляции и каталог камер Алматы",
+  analytics: "Закономерности в зарегистрированных данных",
+  reports: "Настройте выборку и сохраните отчёт",
+  ai: "Аналитический помощник с опорой на данные",
+  settings: "Подключения, доступ и источники данных",
+  lab: "Сохранённые инструменты предыдущей версии",
+};
 class Boundary extends Component<{ children: ReactNode }, { error: boolean }> {
   state = { error: false };
   static getDerivedStateFromError() {
@@ -75,10 +93,9 @@ class Boundary extends Component<{ children: ReactNode }, { error: boolean }> {
   render() {
     return this.state.error ? (
       <div className="op-empty">
-        <h2>Не удалось открыть модуль</h2>
-        <p>Обновите страницу. Сохранённые записи останутся в хранилище.</p>
-        <button className="op-button" onClick={() => location.reload()}>
-          Обновить
+        <h2>Не удалось открыть раздел</h2>
+        <button className="op-primary" onClick={() => location.reload()}>
+          Обновить страницу
         </button>
       </div>
     ) : (
@@ -95,20 +112,56 @@ export default function App() {
 }
 function Workspace() {
   const store = useOperations();
-  const [page, setPage] = useState<Page>(() =>
-      navigation.some((n) => n[0] === location.hash.slice(1))
-        ? (location.hash.slice(1) as Page)
-        : "overview",
-    ),
-    [menu, setMenu] = useState(false);
-  const [filters, setFilters] = useState<Filters>({ ...emptyFilters }),
-    [editing, setEditing] = useState<EventRecord | "new" | null>(null),
-    [detail, setDetail] = useState<EventRecord | null>(null),
+  const [route, setRoute] = useState(() => parseRoute(location.hash)),
+    [menu, setMenu] = useState(false),
     [login, setLogin] = useState(false),
     [toast, setToast] = useState(""),
+    [search, setSearch] = useState(""),
     [eventPage, setEventPage] = useState(0),
     [lab, setLab] = useState(false),
-    [checks, setChecks] = useState<PlaybackChecks>({});
+    [checks, setChecks] = useState<PlaybackChecks>({}),
+    [token, setToken] = useState(0),
+    [filters, setFilters] = useState<Filters>(() =>
+      loadSession("qorgau-event-filters", { ...emptyFilters }),
+    ),
+    [period, setPeriod] = useState("all");
+  const page = route.page;
+  const go = (p: Page, params: Record<string, string> = {}, entity = "") => {
+    const hash = routeHash(p, params, entity);
+    if (location.hash === hash) {
+      setRoute(parseRoute(hash));
+      setToken((t) => t + 1);
+    } else location.hash = hash;
+    setMenu(false);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+  useEffect(() => {
+    const change = () => {
+      const next = parseRoute(location.hash);
+      setRoute(next);
+      setToken((t) => t + 1);
+      setMenu(false);
+      window.scrollTo(0, 0);
+      if (next.page === "events" || next.page === "map") {
+        const additions = filterRouteValues(next.params, { ...emptyFilters });
+        if (Object.keys(additions).length)
+          setFilters({ ...emptyFilters, ...additions });
+      }
+    };
+    addEventListener("hashchange", change);
+    change();
+    return () => removeEventListener("hashchange", change);
+  }, []);
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("qorgau-event-filters", JSON.stringify(filters));
+    } catch {}
+  }, [filters]);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(""), 6500);
+    return () => clearTimeout(t);
+  }, [toast]);
   const onCheck = useCallback(
     (id: string, url: string, status: string) =>
       setChecks((c) => ({
@@ -133,77 +186,104 @@ function Workspace() {
       available: states.filter((s) => s === "Доступна").length,
       unavailable: states.filter((s) => s === "Недоступна").length,
       unknown: states.filter((s) => s === "Не проверена").length,
-      disabled: states.filter((s) => s === "Отключена").length,
     };
   }, [checks, store.cameras]);
+  const detail = store.events.find((e) => e.id === route.entity);
+  const composing =
+    page === "events" &&
+    (route.entity === "new" ||
+      Boolean(detail && route.params.get("edit") === "1"));
+  const title =
+    navigation.find((n) => n[0] === page)?.[1] ??
+    "Экспериментальные инструменты";
+  const connected =
+    store.mode === "demo" || Boolean(store.mode === "database" && store.user);
   const currentPage = Math.min(
     eventPage,
     Math.max(0, Math.ceil(filtered.length / 20) - 1),
   );
-  const selectPage = (value: Page) => {
-    setPage(value);
-    location.hash = value;
-    setMenu(false);
+  const openEvent = (e: EventRecord) => go("events", {}, e.id);
+  const explore = (f: Filters) => {
+    setFilters(f);
+    setEventPage(0);
+    go("events", Object.fromEntries(Object.entries(f).filter(([, v]) => v)));
   };
-  useEffect(() => {
-    const change = () => {
-      const value = location.hash.slice(1);
-      if (navigation.some((n) => n[0] === value)) setPage(value as Page);
-    };
-    addEventListener("hashchange", change);
-    return () => removeEventListener("hashchange", change);
-  }, []);
-  useEffect(() => {
-    if (!toast) return;
-    const timeout = setTimeout(() => setToast(""), 6500);
-    return () => clearTimeout(timeout);
-  }, [toast]);
-  const connected =
-    store.mode === "demo" || Boolean(store.mode === "database" && store.user);
-  const pageTitle = navigation.find((n) => n[0] === page)?.[1];
+  const openCamera = (c: CameraRecord) => go("cameras", { camera: c.id });
+  const cameraMap = (c: CameraRecord) => {
+    if (c.latitude !== null && c.longitude !== null)
+      go("map", {
+        latitude: String(c.latitude),
+        longitude: String(c.longitude),
+        camera: c.id,
+      });
+    else go("map", { district: c.district, camera: c.id });
+  };
+  const anchorDate = store.events.length
+    ? Math.max(...store.events.map((e) => Date.parse(e.occurred_at)))
+    : Date.now();
+  const overviewEvents =
+    period === "all"
+      ? store.events
+      : store.events.filter(
+          (e) =>
+            Date.parse(e.occurred_at) >=
+            anchorDate - (Number(period) - 1) * 86400000,
+        );
+  const setEventsFilter = (key: keyof Filters, value: string) =>
+    explore({ ...emptyFilters, [key]: value });
   return (
     <div className="op-workspace">
+      {menu && (
+        <button
+          className="ws-backdrop"
+          aria-label="Закрыть навигацию"
+          onClick={() => setMenu(false)}
+        />
+      )}
       <aside className={`op-sidebar ${menu ? "open" : ""}`}>
-        <a
-          href="#overview"
-          className="op-brand"
-          onClick={() => selectPage("overview")}
-        >
+        <a className="op-brand" href="#overview">
           <span>
-            <ShieldCheck size={27} />
+            <ShieldCheck size={28} />
           </span>
           <div>
-            QORGAU <b>VISION</b>
-            <small>СИТУАЦИОННЫЙ ЦЕНТР</small>
+            QORGAU <b>Vision</b>
+            <small>ГОРОД В ПОЛЕ ЗРЕНИЯ</small>
           </div>
         </a>
-        <div className="op-city">
-          <span className="op-dot" />
-          АЛМАТЫ <small>КАЗАХСТАН / UTC+5</small>
-        </div>
+        <div className="ws-nav-caption">РАБОЧЕЕ ПРОСТРАНСТВО</div>
         <nav aria-label="Разделы QORGAU">
           {navigation.map(([id, label, Icon]) => (
             <button
               key={id}
-              className={`${page === id ? "active" : ""} ${id === "lab" ? "op-lab-link" : ""}`}
-              onClick={() => selectPage(id)}
+              aria-current={page === id ? "page" : undefined}
+              className={page === id ? "active" : ""}
+              onClick={() => go(id)}
             >
-              <Icon size={19} />
+              <Icon size={17} />
               <span>{label}</span>
               {id === "events" && <small>{store.events.length}</small>}
-              {id === "ai" && <span className="op-nav-ai">AI</span>}
+              {id === "ai" && <i className="ws-beta">AI</i>}
             </button>
           ))}
         </nav>
+        <div className="ws-city-art" aria-hidden="true">
+          <svg viewBox="0 0 200 95">
+            <path d="M0 89 32 53 51 70 86 20 113 54 132 38 164 69 182 54 200 83" />
+            <path d="m63 51 23-31 20 26-20-11-12 17M0 95l50-22 24 7 47-20 79 32" />
+          </svg>
+          <MapPin size={16} />
+          <strong>Алматы</strong>
+          <small>Казахстан · UTC+5</small>
+        </div>
         <div className="op-sidebar-footer">
-          <Database size={16} />
+          <Database size={15} />
           <span>
             {store.mode === "database"
-              ? "Серверное хранилище"
+              ? "Серверная база"
               : store.mode === "demo"
-                ? "Локальное DEMO"
-                : "Проверка подключения"}
-            <small>Прототип · не ведомственная система</small>
+                ? "Учебное пространство"
+                : "Проверка сервера"}
+            <small>QORGAU VISION / 02</small>
           </span>
         </div>
       </aside>
@@ -211,29 +291,47 @@ function Workspace() {
         <header className="op-topbar">
           <button
             className="op-mobile-toggle"
-            onClick={() => setMenu(!menu)}
             aria-label="Открыть навигацию"
+            onClick={() => setMenu(!menu)}
           >
-            <Menu size={21} />
+            <Menu size={20} />
           </button>
-          <span>
-            Рабочее пространство <b>/ {pageTitle}</b>
-          </span>
+          <div className="ws-breadcrumb">
+            <MapPin size={14} />
+            <button onClick={() => go("overview")}>Ситуационный центр</button>
+            <ChevronRight size={12} />
+            <button onClick={() => go("map")}>Алматы</button>
+          </div>
+          <form
+            className="ws-global-search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              explore({ ...emptyFilters, query: search });
+            }}
+          >
+            <Search size={16} />
+            <input
+              aria-label="Глобальный поиск событий"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Поиск по событиям, районам…"
+            />
+            <button aria-label="Найти события" type="submit">
+              <ChevronRight size={16} />
+            </button>
+          </form>
           <div className="op-topbar-actions">
-            <span className="op-tag">
-              {store.mode === "demo"
-                ? "DEMO"
-                : store.user
-                  ? roleNames[store.user.role]
-                  : "ПРОТОТИП"}
-            </span>
             <button
               onClick={() => void store.refresh()}
               disabled={store.busy}
               aria-label="Обновить данные"
             >
-              <RefreshCw size={17} className={store.busy ? "op-spin" : ""} />
+              <RefreshCw size={16} className={store.busy ? "op-spin" : ""} />
             </button>
+            <span className="ws-top-date">
+              {displayTime(store.updated || new Date().toISOString())}
+              <small>Время Алматы</small>
+            </span>
             {store.user ? (
               <button
                 onClick={() =>
@@ -241,79 +339,115 @@ function Workspace() {
                 }
                 title="Выйти"
               >
-                <LogOut size={17} />
-                <span>{store.user.display_name}</span>
+                <span className="ws-avatar">
+                  {store.user.display_name.slice(0, 1)}
+                </span>
+                <span>{roleNames[store.user.role]}</span>
+                <LogOut size={14} />
               </button>
             ) : (
               <button onClick={() => setLogin(true)}>
-                <LogIn size={17} />
+                <span className="ws-avatar">
+                  <LogIn size={14} />
+                </span>
                 <span>Войти</span>
               </button>
             )}
           </div>
         </header>
-        <main className="op-main">
+        <main className={`op-main ws-page-${page}`}>
           <div className="op-page-heading">
-            <div>
-              <span className="op-eyebrow">ALMATY / SITUATION CENTER</span>
-              <h1>{page === "overview" ? "Город в поле зрения" : pageTitle}</h1>
-              <p>
-                {page === "overview"
-                  ? "События, публичные камеры и аналитика в одном пространстве."
-                  : "Достоверные данные. Понятные источники. Контроль оператора."}
-              </p>
+            <div className="ws-title-line">
+              <span className="ws-title-icon">
+                {page === "overview" ? (
+                  <LayoutDashboard />
+                ) : page === "cameras" ? (
+                  <Camera />
+                ) : page === "events" ? (
+                  <TriangleAlert />
+                ) : page === "map" ? (
+                  <Map />
+                ) : page === "analytics" ? (
+                  <ChartNoAxesCombined />
+                ) : page === "reports" ? (
+                  <FileText />
+                ) : page === "ai" ? (
+                  <Sparkles />
+                ) : (
+                  <Settings />
+                )}
+              </span>
+              <div>
+                <h1>
+                  {page === "overview" ? "Обзор города" : title}
+                  <span
+                    className={`op-tag ${store.mode === "demo" ? "green" : ""}`}
+                  >
+                    {store.mode === "demo"
+                      ? "DEMO"
+                      : store.mode === "database"
+                        ? "БАЗА ДАННЫХ"
+                        : "ПРОТОТИП"}
+                  </span>
+                </h1>
+                <p>{subtitles[page]}</p>
+              </div>
             </div>
-            {connected && store.canWrite && page !== "lab" && (
-              <button className="op-primary" onClick={() => setEditing("new")}>
-                <Plus size={17} /> Создать событие
-              </button>
-            )}
+            <div className="op-actions">
+              {page !== "overview" && (
+                <button
+                  className="ws-back-button"
+                  onClick={() => go("overview")}
+                >
+                  <ArrowLeft size={15} />К обзору
+                </button>
+              )}
+              {connected && store.canWrite && page !== "lab" && !composing && (
+                <button
+                  className="op-primary"
+                  onClick={() => go("events", {}, "new")}
+                >
+                  <Plus size={16} />
+                  Создать событие
+                </button>
+              )}
+            </div>
           </div>
           {store.mode === "demo" && (
-            <div className="op-mode-note">
-              <span className="op-tag">DEMO</span>
+            <div className="ws-data-banner">
+              <span className="op-dot" />
+              <strong>Учебные данные</strong>
               <span>
-                События учебные и сохраняются только в этом браузере. Публичные
-                камеры — отдельные внешние источники. База, пользователи и AI
-                ещё не подключены.
+                События сохраняются в этом браузере. Камеры — публичные внешние
+                источники.
               </span>
+              <button onClick={() => go("settings")}>
+                О подключениях <ArrowUpRight size={13} />
+              </button>
             </div>
           )}
           {store.error && (
-            <div role="alert" className="op-error">
-              {store.error}{" "}
-              {store.updated && "Показаны последние загруженные данные."}
+            <div className="op-error" role="alert">
+              {store.error}
               <button onClick={() => void store.refresh()}>Повторить</button>
               {store.mode === "error" && (
-                <button
-                  onClick={() => {
-                    try {
-                      store.local();
-                    } catch (e) {
-                      setToast(String(e));
-                    }
-                  }}
-                >
+                <button onClick={() => store.local()}>
                   Открыть локальное DEMO
                 </button>
               )}
             </div>
           )}
           {store.mode === "loading" ? (
-            <div className="op-skeleton">
-              Проверка сервера и загрузка данных…
+            <div className="ws-loading">
+              <Activity className="op-spin" />
+              <h2>Загружаем рабочее пространство</h2>
+              <p>Проверка API и доступных данных…</p>
             </div>
-          ) : !connected && page !== "settings" && page !== "lab" ? (
+          ) : !connected && page !== "settings" ? (
             <div className="op-empty">
-              <ShieldCheck size={44} />
-              <h2>
-                {store.mode === "database"
-                  ? "Войдите в рабочее пространство"
-                  : "Хранилище недоступно"}
-              </h2>
-              <p>
-                Серверные события доступны только авторизованным пользователям.
-              </p>
+              <ShieldCheck size={40} />
+              <h2>Войдите в рабочее пространство</h2>
+              <p>Доступ к серверным данным зависит от вашей роли.</p>
               <button className="op-primary" onClick={() => setLogin(true)}>
                 Войти
               </button>
@@ -322,134 +456,194 @@ function Workspace() {
             <>
               {page === "overview" && (
                 <>
-                  <div className="op-stats">
-                    {[
-                      [
-                        TriangleAlert,
-                        "Событий в системе",
-                        store.events.length,
-                        `${store.events.filter((e) => e.is_demo).length} учебных записей`,
-                      ],
-                      [
-                        Radio,
-                        "Доступно камер",
-                        stats.available,
-                        "Проверено воспроизведением",
-                      ],
-                      [
-                        Camera,
-                        "Недоступно камер",
-                        stats.unavailable,
-                        `${stats.unknown} не проверено · ${stats.disabled} отключено`,
-                      ],
-                      [
-                        ChartNoAxesCombined,
-                        "Событий в работе",
+                  <div className="ws-stat-grid">
+                    <Stat
+                      icon={<TriangleAlert />}
+                      label="События в системе"
+                      value={store.events.length}
+                      note={`${store.events.filter((e) => e.is_demo).length} учебных записей`}
+                      onClick={() => explore({ ...emptyFilters })}
+                    />
+                    <Stat
+                      icon={<Camera />}
+                      label="Камеры доступны"
+                      value={`${stats.available} / ${store.cameras.length}`}
+                      note={`${stats.unknown} ещё не проверено`}
+                      onClick={() => go("cameras", { status: "Доступна" })}
+                      tone="cyan"
+                    />
+                    <Stat
+                      icon={<Clock3 />}
+                      label="В работе"
+                      value={
                         store.events.filter((e) => e.status === "В работе")
-                          .length,
-                        "По текущему статусу",
-                      ],
-                    ].map(([Icon, label, value, note]) => {
-                      const I = Icon as typeof Camera;
-                      return (
-                        <article className="op-stat" key={String(label)}>
-                          <div>
-                            <span>{String(label)}</span>
-                            <I size={19} />
-                          </div>
-                          <strong>{String(value)}</strong>
-                          <small>{String(note)}</small>
-                        </article>
-                      );
-                    })}
+                          .length
+                      }
+                      note="Открыть события в обработке"
+                      onClick={() => setEventsFilter("status", "В работе")}
+                      tone="amber"
+                    />
+                    <Stat
+                      icon={<Radio />}
+                      label="Недоступные камеры"
+                      value={stats.unavailable}
+                      note="Результат проверки в этой сессии"
+                      onClick={() => go("cameras", { status: "Недоступна" })}
+                      tone="violet"
+                    />
                   </div>
-                  <div className="op-overview-grid">
-                    <section className="op-panel op-dashboard-map">
-                      <div className="op-between">
-                        <h2>Оперативная карта</h2>
-                        <button
-                          className="op-link"
-                          onClick={() => selectPage("map")}
-                        >
-                          Открыть карту <ArrowUpRight size={15} />
+                  <div className="ws-overview-main">
+                    <section className="ws-panel ws-map-panel">
+                      <div className="ws-panel-heading">
+                        <h2>
+                          <MapPin size={17} />
+                          Карта Алматы
+                        </h2>
+                        <button className="op-link" onClick={() => go("map")}>
+                          Развернуть <ArrowUpRight size={14} />
                         </button>
                       </div>
                       <OperationsMap
                         events={store.events}
                         cameras={store.cameras}
                         compact
+                        onEventSelect={openEvent}
+                        onCameraSelect={openCamera}
                       />
                     </section>
-                    <section className="op-panel">
-                      <div className="op-between">
-                        <h2>Последние события</h2>
-                        <span className="op-muted">{store.events.length}</span>
+                    <section className="ws-panel ws-recent">
+                      <div className="ws-panel-heading">
+                        <h2>
+                          <Activity size={16} />
+                          Последние события
+                        </h2>
+                        <button
+                          className="op-link"
+                          onClick={() => explore({ ...emptyFilters })}
+                        >
+                          Все события <ArrowUpRight size={14} />
+                        </button>
                       </div>
                       <EventList
                         events={filterEvents(store.events, emptyFilters).slice(
                           0,
-                          5,
+                          4,
                         )}
-                        onSelect={setDetail}
+                        onSelect={openEvent}
                       />
-                      <button
-                        className="op-link"
-                        onClick={() => selectPage("events")}
-                      >
-                        Все события <ArrowUpRight size={15} />
-                      </button>
-                    </section>
-                    <section className="op-panel">
-                      <h2>Распределение по районам</h2>
-                      <Bars
-                        values={counts(store.events, "district")}
-                        label="События по районам"
-                      />
-                    </section>
-                    <section className="op-panel">
-                      <h2>Динамика событий</h2>
-                      <Trend events={store.events} />
+                      <div className="ws-recent-footer">
+                        <span>
+                          <span className="op-dot" />
+                          Ручная регистрация
+                        </span>
+                        <small>Нет автоматической ленты</small>
+                      </div>
                     </section>
                   </div>
-                  <div className="op-quick-links">
-                    {[
-                      [
-                        "cameras",
-                        "Видеомониторинг",
-                        "Публичные камеры и видеостена",
-                        Camera,
-                      ],
-                      [
-                        "analytics",
-                        "Аналитика",
-                        "Категории, районы и периоды",
-                        ChartNoAxesCombined,
-                      ],
-                      ["ai", "QORGAU AI", "Сводки на основе данных", Sparkles],
-                    ].map(([id, label, note, Icon]) => {
-                      const I = Icon as typeof Camera;
-                      return (
-                        <button
-                          key={String(id)}
-                          onClick={() => selectPage(id as Page)}
-                        >
-                          <I size={24} />
-                          <span>
-                            <strong>{String(label)}</strong>
-                            <small>{String(note)}</small>
-                          </span>
-                          <ArrowUpRight size={20} />
+                  <div className="ws-overview-bottom">
+                    <section className="ws-panel ws-activity">
+                      <div className="ws-panel-heading">
+                        <h2>
+                          <ChartNoAxesCombined size={16} />
+                          Динамика регистрации
+                        </h2>
+                        <div className="op-segments">
+                          {[
+                            ["7", "7 дней"],
+                            ["30", "30 дней"],
+                            ["all", "Все данные"],
+                          ].map(([id, label]) => (
+                            <button
+                              key={id}
+                              className={period === id ? "active" : ""}
+                              onClick={() => setPeriod(id)}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <Trend
+                        events={overviewEvents}
+                        onSelect={(day) =>
+                          explore({ ...emptyFilters, from: day, to: day })
+                        }
+                      />
+                      <small className="ws-chart-caption">
+                        {period === "all"
+                          ? "Все зарегистрированные даты"
+                          : "Период заканчивается датой последней записи"}{" "}
+                        · нажмите на точку для просмотра событий
+                      </small>
+                    </section>
+                    <section className="ws-panel ws-ai-card">
+                      <div className="ws-panel-heading">
+                        <h2>
+                          <Sparkles size={17} />
+                          QORGAU AI
+                        </h2>
+                        <span className="op-tag">
+                          {store.aiEnabled ? "Подключён" : "Следующий этап"}
+                        </span>
+                      </div>
+                      <div className="ws-ai-body">
+                        <div className="ws-ai-orb">
+                          <Sparkles size={28} />
+                        </div>
+                        <div>
+                          <h3>От событий — к пониманию</h3>
+                          <p>
+                            Сводки, сравнение районов и анализ данных.
+                            Подключение модели выполняется отдельным этапом.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="ws-ai-card-actions">
+                        <button onClick={() => go("ai")}>
+                          Открыть помощника <ArrowUpRight size={16} />
                         </button>
-                      );
-                    })}
+                        <button onClick={() => go("reports")}>
+                          Создать отчёт <FileText size={15} />
+                        </button>
+                      </div>
+                    </section>
                   </div>
+                  <section className="ws-panel ws-district-overview">
+                    <div className="ws-panel-heading">
+                      <h2>
+                        <Map size={17} />
+                        Районы Алматы
+                      </h2>
+                      <span className="op-muted">
+                        Нажмите, чтобы открыть район на карте
+                      </span>
+                    </div>
+                    <div className="ws-districts">
+                      {districts.map((d) => (
+                        <button
+                          key={d.id}
+                          onClick={() => go("map", { district: d.name })}
+                        >
+                          <MapPin size={15} />
+                          <span>{d.name}</span>
+                          <strong>
+                            {
+                              store.events.filter((e) => e.district === d.name)
+                                .length
+                            }
+                          </strong>
+                          <ChevronRight size={14} />
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                 </>
               )}
               {page === "map" && (
                 <>
-                  <div className="op-filters">
+                  <div className="ws-map-filter">
                     <Select
-                      label="Район"
+                      label="Район карты"
                       value={filters.district}
                       options={districts.map((d) => d.name)}
                       all="Все районы"
@@ -472,130 +666,415 @@ function Workspace() {
                       className="op-button"
                       onClick={() => setFilters({ ...emptyFilters })}
                     >
-                      Сбросить все фильтры
+                      <RefreshCw size={14} />
+                      Сбросить
                     </button>
+                    <span className="op-muted">
+                      {filtered.length} событий · {store.cameras.length} камер в
+                      каталоге
+                    </span>
                   </div>
                   <OperationsMap
                     events={filtered}
                     cameras={store.cameras}
                     district={filters.district}
+                    onDistrictChange={(v) =>
+                      setFilters((f) => ({ ...f, district: v }))
+                    }
+                    onEventSelect={openEvent}
+                    onCameraSelect={openCamera}
+                    selectedCameraId={route.params.get("camera") ?? undefined}
+                    focusPoint={
+                      route.params.has("latitude")
+                        ? {
+                            latitude: Number(route.params.get("latitude")),
+                            longitude: Number(route.params.get("longitude")),
+                            nonce: token,
+                          }
+                        : undefined
+                    }
                   />
-                  <p className="op-muted">
-                    DEMO-события обозначены в карточках. Для учебных экипажей,
-                    маршрутов и публичных отметок полиции OSM откройте
-                    экспериментальный раздел. Событий на карте:{" "}
-                    {filtered.length}.
-                  </p>
                 </>
               )}
-              {page === "events" && (
-                <>
-                  <div className="op-section-title">
-                    <div>
-                      <h2>
-                        Журнал событий <span>{filtered.length}</span>
-                      </h2>
-                      <p>Ручная регистрация и история обработки</p>
+              {page === "events" &&
+                (composing ? (
+                  <div className="ws-editor-layout">
+                    <section className="ws-panel ws-event-editor">
+                      <div className="ws-panel-heading">
+                        <h2>
+                          {detail
+                            ? "Редактирование события"
+                            : "Регистрация события"}
+                        </h2>
+                        <span className="op-tag">
+                          {store.mode === "demo"
+                            ? "DEMO"
+                            : "Ручная регистрация"}
+                        </span>
+                      </div>
+                      <EventForm
+                        key={route.entity + route.params.get("edit")}
+                        embedded
+                        existing={detail}
+                        demo={store.mode === "demo"}
+                        onClose={() =>
+                          detail ? openEvent(detail) : go("events")
+                        }
+                        onSave={async (input) => {
+                          await store.saveEvent(input, detail);
+                          if (!detail) setFilters({ ...emptyFilters });
+                          setToast(
+                            store.mode === "demo"
+                              ? "Учебное событие сохранено в этом браузере."
+                              : "Событие сохранено в базе.",
+                          );
+                        }}
+                      />
+                    </section>
+                    <aside className="ws-panel ws-editor-guide">
+                      <span className="ws-guide-number">01</span>
+                      <h3>Зарегистрируйте наблюдение</h3>
+                      <p>
+                        Укажите понятное название, описание и время. Выберите
+                        место на карте или введите координаты.
+                      </p>
+                      <span className="ws-guide-number">02</span>
+                      <h3>Сохраните источник</h3>
+                      <p>
+                        Ручная запись не означает независимого подтверждения.
+                        Учебные записи сохраняют отметку DEMO.
+                      </p>
+                      <span className="ws-guide-number">03</span>
+                      <h3>Отслеживайте обработку</h3>
+                      <p>
+                        После сохранения событие появится в журнале, на карте и
+                        в аналитике.
+                      </p>
+                    </aside>
+                  </div>
+                ) : detail ? (
+                  <div className="ws-event-detail">
+                    <div className="ws-detail-top">
+                      <button className="op-link" onClick={() => go("events")}>
+                        <ArrowLeft size={16} />К журналу событий
+                      </button>
+                      <span>
+                        События <ChevronRight size={12} />
+                        Карточка <span className="op-muted">{detail.id}</span>
+                      </span>
                     </div>
-                    <button
-                      className="op-button"
-                      onClick={() =>
-                        downloadFile(
-                          "qorgau-events.csv",
-                          eventsCsv(filtered),
-                          "text/csv;charset=utf-8",
-                        )
-                      }
-                    >
-                      Экспорт CSV
-                    </button>
+                    <div className="ws-detail-grid">
+                      <section className="ws-panel">
+                        <div className="ws-event-title">
+                          <EventIcon category={detail.category} />
+                          <div>
+                            <span className="op-tag">
+                              {detail.is_demo ? "DEMO" : "Ручная регистрация"}
+                            </span>
+                            <h2>{detail.title}</h2>
+                            <p>
+                              {displayTime(detail.occurred_at)} ·{" "}
+                              {detail.district}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="ws-description">{detail.description}</p>
+                        <dl className="op-details">
+                          <dt>Категория</dt>
+                          <dd>{detail.category}</dd>
+                          <dt>Статус</dt>
+                          <dd>
+                            <span className="op-tag">{detail.status}</span>
+                          </dd>
+                          <dt>Приоритет</dt>
+                          <dd>{detail.priority}</dd>
+                          <dt>Источник</dt>
+                          <dd>{detail.source}</dd>
+                          <dt>Координаты</dt>
+                          <dd>
+                            {detail.latitude}, {detail.longitude}
+                          </dd>
+                          <dt>Обновлено</dt>
+                          <dd>
+                            {displayTime(detail.updated_at)} · версия{" "}
+                            {detail.version}
+                          </dd>
+                        </dl>
+                        <div className="op-actions">
+                          {store.canWrite && (
+                            <button
+                              className="op-primary"
+                              onClick={() =>
+                                go("events", { edit: "1" }, detail.id)
+                              }
+                            >
+                              <SlidersHorizontal size={16} />
+                              Изменить событие
+                            </button>
+                          )}
+                          <button
+                            className="op-button"
+                            onClick={() =>
+                              go("map", {
+                                latitude: String(detail.latitude),
+                                longitude: String(detail.longitude),
+                              })
+                            }
+                          >
+                            <MapPin size={16} />
+                            Показать на карте
+                          </button>
+                        </div>
+                      </section>
+                      <section className="ws-panel">
+                        <div className="ws-panel-heading">
+                          <h2>
+                            <Clock3 size={17} />
+                            История обработки
+                          </h2>
+                        </div>
+                        {store.audit.filter((a) => a.entity_id === detail.id)
+                          .length ? (
+                          store.audit
+                            .filter((a) => a.entity_id === detail.id)
+                            .map((a) => (
+                              <div className="ws-timeline" key={a.id}>
+                                <span className="op-dot" />
+                                <div>
+                                  <strong>
+                                    {a.action === "INSERT"
+                                      ? "Событие создано"
+                                      : "Событие изменено"}
+                                  </strong>
+                                  <small>
+                                    {displayTime(a.created_at)} ·{" "}
+                                    {a.actor ?? "Система"}
+                                  </small>
+                                  <details>
+                                    <summary>Изменённые данные</summary>
+                                    <pre>
+                                      {JSON.stringify(
+                                        {
+                                          до: a.before_data,
+                                          после: a.after_data,
+                                        },
+                                        null,
+                                        2,
+                                      )}
+                                    </pre>
+                                  </details>
+                                </div>
+                              </div>
+                            ))
+                        ) : (
+                          <div className="op-empty">
+                            <Clock3 size={28} />
+                            <p>
+                              Для встроенной учебной записи история не
+                              создавалась. Изменения появятся здесь после
+                              сохранения.
+                            </p>
+                          </div>
+                        )}
+                      </section>
+                    </div>
                   </div>
-                  <EventFilters
-                    filters={filters}
-                    onChange={(f) => {
-                      setFilters(f);
-                      setEventPage(0);
-                    }}
-                  />
-                  <div className="op-toolbar">
-                    <span>
-                      {filtered.length} из {store.events.length} событий
-                    </span>
-                    <button onClick={() => setFilters({ ...emptyFilters })}>
-                      Сбросить фильтры
-                    </button>
-                  </div>
-                  <div className="op-table-wrap">
-                    <table className="op-table">
-                      <thead>
-                        <tr>
-                          <th>Событие</th>
-                          <th>Район</th>
-                          <th>Категория</th>
-                          <th>Приоритет</th>
-                          <th>Статус</th>
-                          <th>Время · Алматы</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filtered
-                          .slice(currentPage * 20, currentPage * 20 + 20)
-                          .map((e) => (
-                            <tr key={e.id}>
-                              <td>
-                                <button onClick={() => setDetail(e)}>
-                                  {e.title}
-                                </button>
-                                <small>
-                                  {e.is_demo
-                                    ? "DEMO · учебное"
-                                    : "Ручная регистрация"}
-                                </small>
-                              </td>
-                              <td>{e.district}</td>
-                              <td>{e.category}</td>
-                              <td>
-                                <span
-                                  className={`op-priority ${e.priority === "Высокий" ? "high" : ""}`}
-                                >
-                                  {e.priority}
-                                </span>
-                              </td>
-                              <td>
-                                <span className="op-tag">{e.status}</span>
-                              </td>
-                              <td>{displayTime(e.occurred_at)}</td>
+                ) : (
+                  <>
+                    <div className="ws-event-summary">
+                      {[
+                        ["Всего", store.events.length, ""],
+                        [
+                          "Новые",
+                          store.events.filter((e) => e.status === "Новое")
+                            .length,
+                          "Новое",
+                        ],
+                        [
+                          "В работе",
+                          store.events.filter((e) => e.status === "В работе")
+                            .length,
+                          "В работе",
+                        ],
+                        [
+                          "Закрыты",
+                          store.events.filter((e) => e.status === "Закрыто")
+                            .length,
+                          "Закрыто",
+                        ],
+                      ].map(([label, value, status]) => (
+                        <button
+                          key={label}
+                          className={filters.status === status ? "active" : ""}
+                          onClick={() =>
+                            setFilters((f) => ({
+                              ...f,
+                              status: String(status),
+                            }))
+                          }
+                        >
+                          <span>{label}</span>
+                          <strong>{value}</strong>
+                        </button>
+                      ))}
+                    </div>
+                    <section className="ws-panel ws-event-register">
+                      <div className="ws-panel-heading">
+                        <h2>
+                          <SlidersHorizontal size={16} />
+                          Фильтры событий
+                        </h2>
+                        <button
+                          className="op-link"
+                          onClick={() => setFilters({ ...emptyFilters })}
+                        >
+                          Сбросить фильтры
+                        </button>
+                      </div>
+                      <EventFilters
+                        filters={filters}
+                        onChange={(f) => {
+                          setFilters(f);
+                          setEventPage(0);
+                        }}
+                      />
+                      <div className="ws-panel-heading ws-table-heading">
+                        <h2>
+                          Журнал событий{" "}
+                          <span className="op-tag">{filtered.length}</span>
+                        </h2>
+                        <button
+                          className="op-button"
+                          onClick={() =>
+                            downloadFile(
+                              "qorgau-events.csv",
+                              eventsCsv(filtered),
+                              "text/csv;charset=utf-8",
+                            )
+                          }
+                        >
+                          <Download size={14} />
+                          Экспорт CSV
+                        </button>
+                      </div>
+                      <div className="op-table-wrap">
+                        <table className="op-table ws-event-table">
+                          <thead>
+                            <tr>
+                              <th>Событие / источник</th>
+                              <th>Район</th>
+                              <th>Категория</th>
+                              <th>Приоритет</th>
+                              <th>Статус</th>
+                              <th>Дата · Алматы</th>
+                              <th aria-label="Действия" />
                             </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {!filtered.length && (
-                    <div className="op-empty">
-                      Событий по выбранным фильтрам нет. Измените фильтры или
-                      создайте учебное событие.
-                    </div>
-                  )}
-                  <div className="op-pagination">
-                    <button
-                      disabled={currentPage === 0}
-                      onClick={() => setEventPage(currentPage - 1)}
-                    >
-                      ← Назад
-                    </button>
-                    <span>
-                      {currentPage + 1} /{" "}
-                      {Math.max(1, Math.ceil(filtered.length / 20))}
-                    </span>
-                    <button
-                      disabled={(currentPage + 1) * 20 >= filtered.length}
-                      onClick={() => setEventPage(currentPage + 1)}
-                    >
-                      Далее →
-                    </button>
-                  </div>
-                </>
-              )}
+                          </thead>
+                          <tbody>
+                            {filtered
+                              .slice(currentPage * 20, currentPage * 20 + 20)
+                              .map((e) => (
+                                <tr key={e.id}>
+                                  <td>
+                                    <button
+                                      className="ws-event-cell"
+                                      onClick={() => openEvent(e)}
+                                    >
+                                      <EventIcon category={e.category} />
+                                      <span>
+                                        <strong>{e.title}</strong>
+                                        <small>
+                                          {e.is_demo
+                                            ? "DEMO · учебное событие"
+                                            : e.source}
+                                        </small>
+                                      </span>
+                                    </button>
+                                  </td>
+                                  <td>
+                                    <button
+                                      className="op-link"
+                                      onClick={() =>
+                                        go("map", { district: e.district })
+                                      }
+                                    >
+                                      {e.district}
+                                    </button>
+                                  </td>
+                                  <td>{e.category}</td>
+                                  <td>
+                                    <span
+                                      className={`op-priority ${e.priority === "Высокий" ? "high" : ""}`}
+                                    >
+                                      {e.priority}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <span
+                                      className={`op-tag ${e.status === "Закрыто" ? "green" : ""}`}
+                                    >
+                                      {e.status}
+                                    </span>
+                                  </td>
+                                  <td>{displayTime(e.occurred_at)}</td>
+                                  <td>
+                                    <button
+                                      aria-label={`Открыть ${e.title}`}
+                                      onClick={() => openEvent(e)}
+                                    >
+                                      <ArrowUpRight size={16} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {!filtered.length && (
+                        <div className="op-empty">
+                          <Search size={28} />
+                          <h3>События не найдены</h3>
+                          <p>Измените условия поиска или сбросьте фильтры.</p>
+                          <button
+                            className="op-button"
+                            onClick={() => setFilters({ ...emptyFilters })}
+                          >
+                            Сбросить фильтры
+                          </button>
+                        </div>
+                      )}
+                      <div className="op-pagination">
+                        <span>
+                          Показано {filtered.length ? currentPage * 20 + 1 : 0}–
+                          {Math.min(filtered.length, (currentPage + 1) * 20)} из{" "}
+                          {filtered.length}
+                        </span>
+                        {filtered.length > 20 && (
+                          <>
+                            <button
+                              disabled={!currentPage}
+                              onClick={() => setEventPage((p) => p - 1)}
+                            >
+                              ← Назад
+                            </button>
+                            <span>
+                              {currentPage + 1} /{" "}
+                              {Math.ceil(filtered.length / 20)}
+                            </span>
+                            <button
+                              disabled={
+                                (currentPage + 1) * 20 >= filtered.length
+                              }
+                              onClick={() => setEventPage((p) => p + 1)}
+                            >
+                              Далее →
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </section>
+                  </>
+                ))}
               {page === "cameras" && (
                 <CameraCenter
                   cameras={store.cameras}
@@ -603,6 +1082,11 @@ function Workspace() {
                   saveCamera={store.saveCamera}
                   checks={checks}
                   onCheck={onCheck}
+                  initialStatus={route.params.get("status") ?? undefined}
+                  initialDistrict={route.params.get("district") ?? undefined}
+                  initialCameraId={route.params.get("camera") ?? undefined}
+                  navigationToken={token}
+                  onNavigateMap={cameraMap}
                 />
               )}
               {(page === "analytics" || page === "reports") && (
@@ -610,6 +1094,7 @@ function Workspace() {
                   key={page}
                   events={store.events}
                   report={page === "reports"}
+                  onExplore={explore}
                 />
               )}
               {page === "ai" && (
@@ -618,18 +1103,43 @@ function Workspace() {
                   connected={Boolean(store.user)}
                 />
               )}
-              {page === "settings" && <SystemPanel store={store} />}
+              {page === "settings" && (
+                <>
+                  <div className="ws-settings-top">
+                    <div>
+                      <ShieldCheck size={28} />
+                      <h2>Рабочее пространство QORGAU</h2>
+                      <p>Параметры хранения, доступа и внешних источников.</p>
+                    </div>
+                    <div className="ws-settings-version">
+                      <span>ВЕРСИЯ ИНТЕРФЕЙСА</span>
+                      <strong>02 / Situational</strong>
+                      <small>React · Cesium · Vercel Functions</small>
+                    </div>
+                  </div>
+                  <SystemPanel store={store} />
+                  <section className="ws-panel ws-legacy-entry">
+                    <div>
+                      <h3>Экспериментальные инструменты</h3>
+                      <p>
+                        Сохранённые функции предыдущей версии: учебные маршруты,
+                        патрули и публичные источники.
+                      </p>
+                    </div>
+                    <button className="op-button" onClick={() => go("lab")}>
+                      Открыть инструменты <ArrowUpRight size={15} />
+                    </button>
+                  </section>
+                </>
+              )}
               {page === "lab" && (
                 <>
                   <div className="op-notice">
-                    Экспериментальная учебная сцена сохранена из предыдущей
-                    версии. Здесь статические DEMO-патрули, сценарии и маршруты;
-                    они не синхронизируются с центром событий. Поиск публичных
-                    профилей не устанавливает личность, проверка телефона только
-                    форматирует номер.
+                    Учебная сцена предыдущей версии. Данные и патрули DEMO не
+                    синхронизируются с журналом.
                   </div>
                   <button className="op-button" onClick={() => setLab(!lab)}>
-                    {lab ? "Закрыть учебную сцену" : "Открыть учебную сцену"}
+                    {lab ? "Закрыть сцену" : "Открыть учебную сцену"}
                   </button>
                   {lab && (
                     <div className="op-legacy">
@@ -643,51 +1153,19 @@ function Workspace() {
             </>
           )}
           <footer className="op-footer">
-            <span>QORGAU Vision · прототип ситуационного центра</span>
             <span>
-              {store.updated
-                ? `Обновлено ${displayTime(store.updated)}`
-                : "Ожидание данных"}{" "}
-              · без автоматической ленты городских происшествий
+              <ShieldCheck size={12} />
+              QORGAU Vision <b>Ситуационный центр</b>
+            </span>
+            <span>
+              {store.mode === "demo"
+                ? "Локальное DEMO"
+                : "Серверное пространство"}{" "}
+              · время Алматы / UTC+5
             </span>
           </footer>
         </main>
       </div>
-      {editing && (
-        <EventForm
-          existing={editing === "new" ? undefined : editing}
-          demo={store.mode === "demo"}
-          onClose={() => setEditing(null)}
-          onSave={async (input) => {
-            await store.saveEvent(
-              input,
-              editing === "new" ? undefined : editing,
-            );
-            setToast(
-              store.mode === "demo"
-                ? "Событие сохранено в локальном DEMO-хранилище."
-                : "Событие сохранено на сервере.",
-            );
-          }}
-        />
-      )}
-      {detail && (
-        <EventDetails
-          event={store.events.find((e) => e.id === detail.id) ?? detail}
-          audit={store.audit}
-          onClose={() => setDetail(null)}
-          onEdit={
-            store.canWrite
-              ? () => {
-                  setEditing(
-                    store.events.find((e) => e.id === detail.id) ?? detail,
-                  );
-                  setDetail(null);
-                }
-              : undefined
-          }
-        />
-      )}
       {login && (
         <Login
           configured={store.mode === "database"}
@@ -697,6 +1175,7 @@ function Workspace() {
       )}
       {toast && (
         <div className="op-toast" role="status">
+          <CheckCircle2 size={18} />
           {toast}
           <button onClick={() => setToast("")} aria-label="Закрыть уведомление">
             ×
@@ -704,6 +1183,49 @@ function Workspace() {
         </div>
       )}
     </div>
+  );
+}
+function Stat({
+  icon,
+  label,
+  value,
+  note,
+  onClick,
+  tone = "blue",
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string | number;
+  note: string;
+  onClick: () => void;
+  tone?: string;
+}) {
+  return (
+    <button className={`ws-stat ${tone}`} onClick={onClick}>
+      <span className="ws-stat-icon">{icon}</span>
+      <span className="ws-stat-body">
+        <span>{label}</span>
+        <strong>{value}</strong>
+        <small>{note}</small>
+      </span>
+      <ArrowUpRight className="ws-stat-arrow" size={15} />
+      <span className="ws-stat-decoration" aria-hidden="true" />
+    </button>
+  );
+}
+function EventIcon({ category }: { category: string }) {
+  return (
+    <span
+      className={`ws-event-icon ${category === "ДТП" ? "red" : category === "Дорожная ситуация" ? "amber" : "blue"}`}
+    >
+      {category === "ДТП" ? (
+        <TriangleAlert size={18} />
+      ) : category === "Дорожная ситуация" ? (
+        <SlidersHorizontal size={18} />
+      ) : (
+        <Activity size={18} />
+      )}
+    </span>
   );
 }
 function EventList({
@@ -718,28 +1240,28 @@ function EventList({
       {events.length ? (
         events.map((e) => (
           <button key={e.id} onClick={() => onSelect(e)}>
-            <span
-              className={`op-event-dot ${e.priority === "Высокий" ? "high" : ""}`}
-            />
+            <EventIcon category={e.category} />
             <span>
               <strong>{e.title}</strong>
-              <small>
-                {e.district} · {e.category}
-              </small>
-              <small>
-                {e.is_demo ? "DEMO · " : ""}
-                {displayTime(e.occurred_at)}
-              </small>
+              <small>{e.district}</small>
+              <span className="ws-event-meta">
+                <small>
+                  <Clock3 size={10} />
+                  {displayTime(e.occurred_at)}
+                </small>
+                <span className="op-tag">{e.is_demo ? "DEMO" : e.status}</span>
+              </span>
             </span>
-            <ArrowUpRight size={15} />
+            <ChevronRight size={14} />
           </button>
         ))
       ) : (
-        <p className="op-muted">События ещё не зарегистрированы.</p>
+        <div className="op-empty">События пока не зарегистрированы.</div>
       )}
     </div>
   );
 }
+
 function Login({
   configured,
   onClose,

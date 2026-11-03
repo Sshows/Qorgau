@@ -32,7 +32,7 @@ export default function AiPanel({
     );
   const ready = enabled && connected;
   return (
-    <>
+    <section className="ws-ai-workspace">
       <div className="op-section-title">
         <div>
           <h2>QORGAU AI</h2>
@@ -53,10 +53,10 @@ export default function AiPanel({
       </div>
       {!ready && (
         <div className="op-notice">
-          Настоящая модель пока недоступна. Для работы нужны база данных, вход
-          пользователя и серверные настройки OPENAI_API_KEY, OPENAI_MODEL,
-          AI_ENABLED=true. Автоматические ответы и имитация AI не используются.
-          Подключение платного API требует согласования расходов.
+          Подключение модели запланировано следующим этапом. Сейчас запросы не
+          отправляются внешнему AI. Вы можете настроить область анализа и
+          подготовить вопрос. Для отправки потребуются рабочая база и вход в
+          систему.
         </div>
       )}
       <EventFilters filters={filters} onChange={setFilters} advanced={false} />
@@ -152,6 +152,6 @@ export default function AiPanel({
           </article>
         ))}
       </div>
-    </>
+    </section>
   );
 }
