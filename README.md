@@ -2,6 +2,8 @@
 
 Прототип ситуационного центра на React 19, TypeScript, Vite и CesiumJS. Сохраняет 2D/3D-карту и публичные источники предыдущей версии, добавляет событийную модель, Vercel Functions и подготовленную интеграцию PostgreSQL/PostGIS/Supabase Auth.
 
+Опубликованная версия: https://qorgau-vision-mad.vercel.app/ — фронтенд и API на Vercel, пока в локальном DEMO. Сведения о выпуске: [docs/RELEASE.md](docs/RELEASE.md).
+
 ## Запуск
 Node.js 24.x, `npm ci`. Два терминала: `npm run dev:api` и `npm run dev`. Открыть http://localhost:4173. Секреты передаются только окружению серверного процесса; `.env.example` — список имён. Vite frontend не получает ключи. `npm test` — 15 проверок, `npm run build` — TypeScript frontend/backend и сборка. В Vercel используется `api/index.ts` без отдельного сервера.
 
